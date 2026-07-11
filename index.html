@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Luce Check — Comparatore CTE vs STG</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
   --carta:#F6F5F1; --inchiostro:#1B2A41; --grigio:#6B7280; --linea:#D8D5CC;
@@ -80,6 +81,21 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--stg);border-colo
 #vincitore .cifra{font-size:30px;font-weight:800;color:var(--verde)}
 #vincitore small{color:var(--grigio);font-size:12.5px}
 #vincitore.vuoto{background:#fff;border-style:dashed;color:var(--grigio)}
+
+/* scontrini */
+.grigliaScontrini{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.grigliaScontrini{grid-template-columns:1fr}}
+.scontrino{border:1px solid var(--linea);border-radius:8px;padding:14px;border-top:4px solid var(--linea)}
+.scontrino.ml{border-top-color:var(--ml)}
+.scontrino.stg{border-top-color:var(--stg)}
+.scontrinoHead .nome{font-size:15px;font-weight:800;margin-bottom:1px}
+.scontrinoHead small{color:var(--grigio);font-size:11.5px}
+.voce{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;
+  border-bottom:1px dashed var(--linea)}
+.voce.sub{padding-left:14px;color:var(--grigio);font-size:12px;border-bottom:none}
+.voce.tot{border-top:2px solid var(--inchiostro);border-bottom:none;margin-top:6px;
+  padding-top:8px;font-weight:800;font-size:15px}
+.scontrinoHead{margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--linea)}
 
 /* tabella ranking */
 .wrapTab{overflow-x:auto}
@@ -168,6 +184,11 @@ footer{max-width:1240px;margin:26px auto 0;padding:0 20px;font-size:11.5px;color
       <button class="bott sec mini" id="btImporta">Importa JSON</button>
       <input type="file" id="fileImporta" accept=".json" style="display:none">
     </div>
+    <div class="barraBott">
+      <button class="bott sec mini" id="btEsportaXlsx">Esporta XLSX</button>
+      <button class="bott sec mini" id="btImportaXlsx">Importa XLSX</button>
+      <input type="file" id="fileImportaXlsx" accept=".xlsx,.xls" style="display:none">
+    </div>
   </section>
 
   <section class="pannello" id="formOfferta" style="display:none">
@@ -219,6 +240,14 @@ footer{max-width:1240px;margin:26px auto 0;padding:0 20px;font-size:11.5px;color
   <div id="avvisi"></div>
 
   <div id="vincitore" class="vuoto">Aggiungi almeno un'offerta per vedere la migliore.</div>
+
+  <section class="blocco">
+    <h2 class="sez">Dettaglio scontrino</h2>
+    <div class="grigliaScontrini">
+      <div class="scontrino ml"><div id="scontrinoSx"></div></div>
+      <div class="scontrino stg"><div id="scontrinoDx"></div></div>
+    </div>
+  </section>
 
   <section class="blocco">
     <h2 class="sez">Classifica offerte
@@ -469,7 +498,7 @@ function calcolaTutto(){
   const stg={tipo:"stg",off:{id:"__stg",nome:"Servizio a Tutele Graduali",fornitore:"benchmark ARERA"},
     b:CalcEngine.bolletta("stg",input,null,cfg,pun),scad:{stato:"nessuna",label:""}};
   const tutte=[...righe,stg].sort((a,b)=>a.b.totale-b.b.totale);
-  const best=tutte.find(r=>r.tipo==="ml"&&r.scad.stato!=="scaduta")||null;
+  const best=tutte.find(r=>r.scad.stato!=="scaduta")||null;
   return{tutte,best,stg,input};
 }
 
@@ -579,7 +608,38 @@ function renderTorta(ris){
 
 function aggiorna(){
   const ris=calcolaTutto();
-  renderLista(ris);renderVincitore(ris);renderTabella(ris);renderTorta(ris);
+  renderLista(ris);renderVincitore(ris);renderScontrini(ris);renderTabella(ris);renderTorta(ris);
+}
+
+/* --------- scontrini dettagliati (ML migliore vs STG) --------- */
+function rigaScontrino(label,val,sub){
+  return `<div class="voce${sub?" sub":""}"><span>${label}</span><span class="mono">${eur(val)}</span></div>`;
+}
+function scontrinoHtml(r,div12){
+  if(!r)return '<div class="nota">Nessuna offerta mercato libero disponibile.</div>';
+  const b=r.b,o=r.off;
+  let h=`<div class="scontrinoHead"><div class="nome">${o.nome}</div>
+    <small>${r.tipo==="stg"?"PUN ex post + dispacciamento · benchmark ARERA":(o.fornitore||"")}</small></div>`;
+  h+=rigaScontrino("Spesa materia energia",b.materia.totale/div12);
+  h+=rigaScontrino("Quota fissa / commercializzazione",b.materia.quotaFissa/div12,true);
+  h+=rigaScontrino("Energia (perdite incluse)",b.materia.energia/div12,true);
+  if(b.materia.sconto)h+=rigaScontrino("Sconto",-b.materia.sconto/div12,true);
+  h+=rigaScontrino("Dispacciamento",b.dispacciamento/div12);
+  h+=rigaScontrino("Trasporto e gestione contatore",b.rete.totale/div12);
+  h+=rigaScontrino("Quota fissa",b.rete.quotaFissa/div12,true);
+  h+=rigaScontrino("Quota potenza",b.rete.quotaPotenza/div12,true);
+  h+=rigaScontrino("Quota energia",b.rete.quotaEnergia/div12,true);
+  h+=rigaScontrino("Oneri di sistema",b.oneri.totale/div12);
+  h+=rigaScontrino("Accisa",b.accisa/div12);
+  h+=rigaScontrino("IVA 10%",b.iva/div12);
+  h+=`<div class="voce tot"><span>Totale ${div12===12?"mensile":"annuo"}</span><span class="mono">${eur(b.totale/div12)}</span></div>`;
+  return h;
+}
+function renderScontrini(ris){
+  const div12=stato.periodo==="mensile"?12:1;
+  const bestMl=ris.tutte.find(r=>r.tipo==="ml"&&r.scad.stato!=="scaduta")||null;
+  $("scontrinoSx").innerHTML=scontrinoHtml(bestMl,div12);
+  $("scontrinoDx").innerHTML=scontrinoHtml(ris.stg,div12);
 }
 
 /* --------- form offerta --------- */
@@ -674,6 +734,47 @@ function importaJson(file){
   fr.readAsText(file);
 }
 
+/* --------- import/export XLSX (per lavorarci in Excel) --------- */
+const XLSX_COLONNE=["id","nome","fornitore","tipoPrezzo","scadenza","perFasce",
+  "p0","pF1","pF2","pF3","quotaFissa","perdite","prezzoConPerdite","dispIncluso",
+  "altriVar","sconto","note"];
+function esportaXlsx(){
+  const righe=offerte.map(o=>{
+    const r={};
+    for(const c of XLSX_COLONNE)r[c]=o[c]??"";
+    return r;
+  });
+  const ws=XLSX.utils.json_to_sheet(righe,{header:XLSX_COLONNE});
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Offerte");
+  XLSX.writeFile(wb,"offerte_luce_check.xlsx");
+}
+function importaXlsx(file){
+  const fr=new FileReader();
+  fr.onload=()=>{try{
+    const wb=XLSX.read(fr.result,{type:"array"});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const righe=XLSX.utils.sheet_to_json(ws,{defval:""});
+    for(const row of righe){
+      const o={id:row.id||nid(),nome:String(row.nome||"").trim(),
+        fornitore:String(row.fornitore||"").trim(),
+        tipoPrezzo:row.tipoPrezzo==="fisso"?"fisso":"indicizzato",
+        scadenza:row.scadenza||null,
+        perFasce:row.perFasce===true||row.perFasce==="TRUE"||row.perFasce===1,
+        p0:+row.p0||0,pF1:+row.pF1||0,pF2:+row.pF2||0,pF3:+row.pF3||0,
+        quotaFissa:+row.quotaFissa||0,perdite:+row.perdite||0,
+        prezzoConPerdite:row.prezzoConPerdite===true||row.prezzoConPerdite==="TRUE"||row.prezzoConPerdite===1,
+        dispIncluso:row.dispIncluso===true||row.dispIncluso==="TRUE"||row.dispIncluso===1,
+        altriVar:+row.altriVar||0,sconto:+row.sconto||0,note:String(row.note||"")};
+      if(!o.nome)continue;
+      const i=offerte.findIndex(x=>x.id===o.id);
+      if(i>=0)offerte[i]=o;else offerte.push(o);
+    }
+    Store.salva(offerte);aggiorna();
+  }catch(e){alert("File non valido: atteso un XLSX esportato da Luce Check (o con le stesse colonne).");}};
+  fr.readAsArrayBuffer(file);
+}
+
 /* --------- wiring --------- */
 function wiring(){
   document.querySelectorAll("#tgPeriodo button").forEach(b=>b.onclick=()=>{
@@ -711,6 +812,9 @@ function wiring(){
   $("btEsporta").onclick=esportaJson;
   $("btImporta").onclick=()=>$("fileImporta").click();
   $("fileImporta").onchange=e=>{if(e.target.files[0])importaJson(e.target.files[0]);e.target.value="";};
+  $("btEsportaXlsx").onclick=esportaXlsx;
+  $("btImportaXlsx").onclick=()=>$("fileImportaXlsx").click();
+  $("fileImportaXlsx").onchange=e=>{if(e.target.files[0])importaXlsx(e.target.files[0]);e.target.value="";};
   $("selTorta").onchange=()=>{stato.tortaId=$("selTorta").value;aggiorna();};
   $("btIncolla").onclick=()=>$("dlgCte").showModal();
   $("btChiudiDlg").onclick=()=>$("dlgCte").close();
