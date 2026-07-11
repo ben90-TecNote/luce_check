@@ -1,0 +1,44 @@
+name: Aggiorna PUN da GME
+
+on:
+  schedule:
+    # Ogni giorno 2 del mese alle 06:30 UTC (mese precedente consolidato)
+    - cron: "30 6 2 * *"
+    # Ogni lunedì alle 06:30 UTC (mese corrente parziale)
+    - cron: "30 6 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  aggiorna:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installa dipendenze
+        run: pip install mercati-energetici
+
+      - name: Scarica e calcola medie PUN
+        run: python scripts/aggiorna_pun.py
+
+      - name: Avviso tariffe ARERA scadute
+        run: |
+          VALIDO_AL=$(python -c "import json;print(json.load(open('config_tariffe.json'))['meta']['validoAl'])")
+          OGGI=$(date +%F)
+          if [[ "$OGGI" > "$VALIDO_AL" ]]; then
+            echo "::warning title=Tariffe ARERA scadute::config_tariffe.json valido fino al $VALIDO_AL - aggiornare i valori del nuovo trimestre."
+          fi
+
+      - name: Commit se cambiato
+        run: |
+          git config user.name "pun-bot"
+          git config user.email "actions@github.com"
+          git add dati/pun.json
+          git diff --cached --quiet || git commit -m "Aggiornamento PUN $(date +%F)"
+          git push
