@@ -1,13 +1,14 @@
 {
   "meta": {
-    "fonte": "GME - PUN Index GME, medie mensili elaborate da scripts/aggiorna_pun.py",
+    "fonte": "GME - MGP/PUN Index, medie mensili per fascia ARERA. Dati raccolti manualmente incrociando piu' fonti secondarie (accesso diretto API GME richiede registrazione dal 15/10/2025)",
     "unita": "eur/kWh",
-    "ultimoAggiornamento": "2026-07-11",
-    "nota": "Valori segnaposto realistici (media maggio 2026 ~0,111 eur/kWh da fonti secondarie). La GitHub Action sovrascrive questo file con i dati ufficiali GME."
+    "ultimoAggiornamento": "2026-07-11"
   },
   "mesi": {
-    "2026-04": { "F0": 0.104, "F1": 0.112, "F2": 0.108, "F3": 0.094 },
-    "2026-05": { "F0": 0.111, "F1": 0.118, "F2": 0.114, "F3": 0.101 },
-    "2026-06": { "F0": 0.115, "F1": 0.124, "F2": 0.118, "F3": 0.104 }
+    "2026-01": {"F0": 0.13266, "F1": 0.15126, "F2": 0.1374, "F3": 0.11829},
+    "2026-02": {"F0": 0.11441, "F1": 0.12228, "F2": 0.11984, "F3": 0.1053},
+    "2026-03": {"F0": 0.1434, "F1": 0.14302, "F2": 0.15391, "F3": 0.13809},
+    "2026-04": {"F0": 0.11947, "F1": 0.11114, "F2": 0.13826, "F3": 0.11663},
+    "2026-05": {"F0": 0.11935, "F1": 0.10717, "F2": 0.13144, "F3": 0.12081}
   }
 }
