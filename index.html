@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bolletta Radar — Simulatore CTE vs STG</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --carta:#F6F5F1; --carta-riga:#EFEDE6; --inchiostro:#1B2A41;
+  --grigio:#6B7280; --linea:#D8D5CC;
+  --ml:#B0413E; --stg:#0E7C7B;
+  --f1:#E8A013; --f2:#5B8DB8; --f3:#7A6FB0;
+  --ok:#2F7D4F; --warn:#B7791F;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--carta);color:var(--inchiostro);
+  font:15px/1.5 "Segoe UI",system-ui,-apple-system,sans-serif;
+  padding-bottom:60px}
+.mono{font-family:"Cascadia Code","Consolas","Menlo",monospace;font-variant-numeric:tabular-nums}
+
+header{border-bottom:3px double var(--inchiostro);padding:22px 20px 14px;
+  display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;justify-content:space-between;
+  max-width:1100px;margin:0 auto}
+header h1{font-size:26px;letter-spacing:-.5px;font-weight:800}
+header h1 span{color:var(--stg)}
+#badgeTariffe{font-size:12px;padding:3px 10px;border:1px solid var(--linea);
+  border-radius:99px;background:#fff}
+#badgeTariffe.scaduto{border-color:var(--warn);color:var(--warn);font-weight:700}
+
+main{max-width:1100px;margin:0 auto;padding:18px 20px;
+  display:grid;grid-template-columns:340px 1fr;gap:22px}
+@media(max-width:860px){main{grid-template-columns:1fr}}
+
+/* ---------------- pannello input ---------------- */
+.pannello{background:#fff;border:1px solid var(--linea);border-radius:10px;
+  padding:18px;align-self:start;position:sticky;top:14px}
+@media(max-width:860px){.pannello{position:static}}
+.pannello h2{font-size:13px;text-transform:uppercase;letter-spacing:1.5px;
+  color:var(--grigio);margin:16px 0 8px;border-bottom:1px solid var(--linea);padding-bottom:4px}
+.pannello h2:first-child{margin-top:0}
+label{display:block;font-size:12.5px;color:var(--grigio);margin:8px 0 3px}
+input[type=number],select{width:100%;padding:7px 9px;border:1px solid var(--linea);
+  border-radius:6px;font-size:14px;background:var(--carta)}
+input[type=number]:focus,select:focus{outline:2px solid var(--stg);border-color:transparent}
+.riga2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.riga3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+.toggle{display:flex;border:1px solid var(--linea);border-radius:6px;overflow:hidden;margin-top:2px}
+.toggle button{flex:1;padding:7px 4px;border:0;background:#fff;cursor:pointer;
+  font-size:13px;color:var(--grigio)}
+.toggle button.attivo{background:var(--inchiostro);color:#fff;font-weight:600}
+.check{display:flex;align-items:center;gap:8px;font-size:13.5px;margin-top:8px;color:var(--inchiostro)}
+.nota{font-size:11.5px;color:var(--grigio);margin-top:4px}
+
+/* ---------------- bollette ---------------- */
+.confronto{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.confronto{grid-template-columns:1fr}}
+.foglio{background:#fff;border:1px solid var(--linea);border-radius:4px;
+  padding:16px 18px;position:relative;
+  box-shadow:0 1px 0 var(--linea),0 6px 14px rgba(27,42,65,.06)}
+.foglio::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;border-radius:4px 4px 0 0}
+.foglio.ml::before{background:var(--ml)}
+.foglio.stg::before{background:var(--stg)}
+.foglio h3{font-size:15px;margin:4px 0 2px}
+.foglio .sotto{font-size:11.5px;color:var(--grigio);margin-bottom:10px}
+.voce{display:flex;justify-content:space-between;gap:8px;padding:5px 0;
+  border-bottom:1px dashed var(--linea);font-size:13.5px}
+.voce .imp{font-weight:600}
+.voce.sub{font-size:12px;color:var(--grigio);border-bottom:0;padding:1px 0 1px 12px}
+.voce.tot{border-top:2px solid var(--inchiostro);border-bottom:0;margin-top:6px;
+  padding-top:8px;font-size:16px;font-weight:800}
+
+.hero{grid-column:1/-1;background:var(--inchiostro);color:#fff;border-radius:10px;
+  padding:16px 20px;display:flex;flex-wrap:wrap;gap:8px 24px;align-items:baseline;
+  justify-content:space-between}
+.hero .delta{font-size:30px;font-weight:800}
+.hero .delta.risparmio{color:#7FD8B0}
+.hero .delta.extra{color:#F4A7A3}
+.hero small{opacity:.75;font-size:12.5px}
+
+.blocco{grid-column:1/-1;background:#fff;border:1px solid var(--linea);
+  border-radius:10px;padding:18px;margin-top:4px}
+.blocco h3{font-size:13px;text-transform:uppercase;letter-spacing:1.5px;
+  color:var(--grigio);margin-bottom:12px}
+#wrapTorta{max-width:420px;margin:0 auto}
+.selTorta{display:flex;gap:8px;justify-content:center;margin-bottom:10px}
+.selTorta button{padding:5px 14px;border:1px solid var(--linea);background:#fff;
+  border-radius:99px;font-size:12.5px;cursor:pointer}
+.selTorta button.attivo{background:var(--inchiostro);color:#fff;border-color:var(--inchiostro)}
+
+#avvisi{grid-column:1/-1}
+.avviso{background:#FFF7E6;border:1px solid #E7C57A;color:#7A5A12;border-radius:8px;
+  padding:9px 14px;font-size:13px;margin-bottom:8px}
+footer{max-width:1100px;margin:26px auto 0;padding:0 20px;font-size:11.5px;color:var(--grigio)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Bolletta <span>Radar</span></h1>
+  <div id="badgeTariffe" class="mono">tariffe: —</div>
+</header>
+
+<main>
+  <!-- ================= INPUT ================= -->
+  <section class="pannello" id="pannello">
+    <h2>Consumi</h2>
+    <div class="toggle" id="tgPeriodo">
+      <button data-v="mensile">Mensile</button>
+      <button data-v="annuale" class="attivo">Annuale</button>
+    </div>
+    <div class="toggle" id="tgFasce" style="margin-top:8px">
+      <button data-v="mono" class="attivo">Monorario</button>
+      <button data-v="multi">Multiorario</button>
+    </div>
+    <div id="boxMono">
+      <label>Consumo (kWh)</label>
+      <input type="number" id="kF0" value="2700" min="0" step="10">
+    </div>
+    <div id="boxMulti" style="display:none">
+      <div class="riga3">
+        <div><label style="color:var(--f1)">F1 (kWh)</label><input type="number" id="kF1" value="1200" min="0"></div>
+        <div><label style="color:var(--f2)">F2 (kWh)</label><input type="number" id="kF2" value="800" min="0"></div>
+        <div><label style="color:var(--f3)">F3 (kWh)</label><input type="number" id="kF3" value="700" min="0"></div>
+      </div>
+    </div>
+
+    <h2>Fornitura</h2>
+    <div class="riga2">
+      <div>
+        <label>Potenza impegnata</label>
+        <select id="potenza">
+          <option value="1.5">1,5 kW</option><option value="3" selected>3 kW</option>
+          <option value="4.5">4,5 kW</option><option value="6">6 kW</option>
+          <option value="10">10 kW</option>
+        </select>
+      </div>
+      <div>
+        <label>Tipologia</label>
+        <select id="residente">
+          <option value="1" selected>Residente</option>
+          <option value="0">Non residente</option>
+        </select>
+      </div>
+    </div>
+
+    <h2>Offerta mercato libero (CTE)</h2>
+    <label>Nome offerta</label>
+    <input type="text" id="nomeOfferta" value="CASA FLEX"
+      style="width:100%;padding:7px 9px;border:1px solid var(--linea);border-radius:6px;background:var(--carta)">
+    <div class="riga2">
+      <div><label>Quota fissa (€/POD/anno)</label>
+        <input type="number" id="qfOfferta" value="207.6" step="0.1"></div>
+      <div><label>Tipo prezzo</label>
+        <select id="tipoPrezzo">
+          <option value="indicizzato" selected>PUN + spread</option>
+          <option value="fisso">Fisso</option>
+        </select></div>
+    </div>
+    <div class="riga2">
+      <div id="boxSpread"><label>Spread (€/kWh)</label>
+        <input type="number" id="spread" value="0.01991" step="0.0001"></div>
+      <div id="boxFisso" style="display:none"><label>Prezzo fisso (€/kWh)</label>
+        <input type="number" id="prezzoFisso" value="0.13" step="0.001"></div>
+      <div><label>Perdite di rete (%)</label>
+        <input type="number" id="perdite" value="10" step="0.1"></div>
+    </div>
+    <label class="check"><input type="checkbox" id="prezzoConPerdite">
+      Prezzo già comprensivo di perdite</label>
+
+    <h2>PUN (fonte GME)</h2>
+    <label>Mese di riferimento</label>
+    <select id="mesePun"></select>
+    <label class="check"><input type="checkbox" id="punManuale"> Inserisci PUN a mano</label>
+    <div id="boxPunManuale" style="display:none">
+      <label>PUN medio (€/kWh)</label>
+      <input type="number" id="punF0" value="0.115" step="0.001">
+      <div class="riga3" id="punFasceBox" style="display:none">
+        <div><label>F1</label><input type="number" id="punF1" value="0.124" step="0.001"></div>
+        <div><label>F2</label><input type="number" id="punF2" value="0.118" step="0.001"></div>
+        <div><label>F3</label><input type="number" id="punF3" value="0.104" step="0.001"></div>
+      </div>
+    </div>
+    <div class="nota" id="notaPun"></div>
+  </section>
+
+  <!-- ================= RISULTATI ================= -->
+  <section>
+    <div id="avvisi"></div>
+    <div class="confronto">
+      <div class="hero">
+        <div>
+          <small id="heroLabel">Differenza annua vs STG</small>
+          <div class="delta mono" id="heroDelta">—</div>
+        </div>
+        <small id="heroDettaglio"></small>
+      </div>
+      <article class="foglio ml">
+        <h3 id="titoloML">Mercato libero</h3>
+        <div class="sotto" id="sottoML"></div>
+        <div id="voceML"></div>
+      </article>
+      <article class="foglio stg">
+        <h3>Servizio a Tutele Graduali</h3>
+        <div class="sotto" id="sottoSTG"></div>
+        <div id="voceSTG"></div>
+      </article>
+    </div>
+
+    <div class="blocco">
+      <h3>Peso delle macro-voci sul totale</h3>
+      <div class="selTorta">
+        <button id="btTortaML" class="attivo">Mercato libero</button>
+        <button id="btTortaSTG">STG</button>
+      </div>
+      <div id="wrapTorta"><canvas id="torta"></canvas></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Valori ARERA da <span class="mono">config_tariffe.json</span> · PUN GME da
+  <span class="mono">dati/pun.json</span> (aggiornato via GitHub Actions) ·
+  Simulazione indicativa al lordo di canone RAI e bonus sociali. Le perdite di rete
+  sono applicate alla sola materia energia; oneri, rete e accise sui kWh misurati.
+</footer>
+
+<script>
+/* ============================================================
+ *  CONFIG DI FALLBACK (embed) - usata se il fetch fallisce
+ *  (apertura da file:// o rete assente). Copia di config_tariffe.json
+ * ============================================================ */
+const CONFIG_FALLBACK = {
+  meta:{versione:"2026-Q3",validoDal:"2026-07-01",validoAl:"2026-09-30",
+    fonte:"ARERA del. 219/2026, 227/2026, 575/2025 (fallback embed)"},
+  rete:{quotaFissa_eur_mese:1.92,quotaPotenza_eur_kW_mese:1.9766,quotaEnergia_eur_kWh:0.01473},
+  oneriSistema:{quotaEnergia_eur_kWh:0.033153,quotaFissaNonResidente_eur_anno:90.64},
+  stg:{parametroGamma_eur_pod_anno:-72.65,dispacciamento_eur_kWh:0.013,
+    dispacciamentoPerditeIncluse:true,cpstgd_eur_kWh:0,perditeRete:0.102},
+  imposte:{accisa_eur_kWh:0.0227,
+    esenzioneResidente:{kWhMese:150,potenzaMax_kW:3,sogliaRecupero_kWhMese:220},iva:0.10},
+  mercatoLibero:{perditeReteDefault:0.10,offertaDefault:{nome:"CASA FLEX",
+    quotaFissa_eur_anno:207.6,tipoPrezzo:"indicizzato",spread_eur_kWh:0.01991,
+    prezzoFisso_eur_kWh:0.13,prezzoComprensivoPerdite:false}}
+};
+const PUN_FALLBACK = {meta:{fonte:"fallback embed",ultimoAggiornamento:"2026-07-11"},
+  mesi:{"2026-06":{F0:0.115,F1:0.124,F2:0.118,F3:0.104}}};
+
+/* ============================================================
+ *  TariffManager - carica config e PUN, gestisce validità
+ * ============================================================ */
+const TariffManager = {
+  config:null, pun:null, avvisi:[],
+  async carica(){
+    this.config = await this._fetchJson("config_tariffe.json", CONFIG_FALLBACK,
+      "config_tariffe.json non raggiungibile: uso i valori integrati (2026-Q3).");
+    this.pun = await this._fetchJson("dati/pun.json", PUN_FALLBACK,
+      "dati/pun.json non raggiungibile: uso il PUN integrato (giu 2026).");
+    this._verificaValidita();
+  },
+  async _fetchJson(url, fallback, msg){
+    try{
+      const r = await fetch(url, {cache:"no-store"});
+      if(!r.ok) throw new Error(r.status);
+      return await r.json();
+    }catch(e){ this.avvisi.push(msg); return fallback; }
+  },
+  _verificaValidita(){                       // opzione (c): avviso trimestre scaduto
+    const oggi = new Date().toISOString().slice(0,10);
+    if(oggi > this.config.meta.validoAl){
+      this.avvisi.push(`Le tariffe ARERA in config (${this.config.meta.versione}, `+
+        `valide fino al ${this.config.meta.validoAl}) sono SCADUTE: i risultati `+
+        `possono differire dal trimestre corrente. Aggiorna config_tariffe.json.`);
+    }
+  },
+  mesiPun(){ return Object.keys(this.pun.mesi).sort().reverse(); },
+  punDelMese(m){ return this.pun.mesi[m]; }
+};
+
+/* ============================================================
+ *  CalcEngine - motore di calcolo (annualizzato; Loop 1-2-3)
+ * ============================================================ */
+const CalcEngine = {
+  normalizzaConsumi(input){
+    const molt = input.periodo==="mensile" ? 12 : 1;
+    let fasce;
+    if(input.multiorario){
+      fasce = {F1:(input.kWh.F1||0)*molt, F2:(input.kWh.F2||0)*molt, F3:(input.kWh.F3||0)*molt};
+    }else{
+      fasce = {F0:(input.kWh.F0||0)*molt};
+    }
+    const totale = Object.values(fasce).reduce((a,b)=>a+b,0);
+    return {fasce, totale, mensile:totale/12};
+  },
+  materiaMercatoLibero(consumi, offerta, pun){
+    const fatt = offerta.prezzoComprensivoPerdite ? 1 : 1+offerta.perdite;
+    let energia=0; const dettaglioFasce={};
+    for(const [f,kwh] of Object.entries(consumi.fasce)){
+      const prezzo = offerta.tipoPrezzo==="fisso" ? offerta.prezzoFisso
+                   : (pun[f] ?? pun.F0) + offerta.spread;
+      const voce = prezzo*kwh*fatt;
+      dettaglioFasce[f]={prezzo,kwh,importo:voce}; energia+=voce;
+    }
+    return {quotaFissa:offerta.quotaFissa, energia,
+            totale:offerta.quotaFissa+energia, dettaglioFasce};
+  },
+  materiaSTG(consumi, cfgStg, pun){
+    let energia=0; const dettaglioFasce={};
+    for(const [f,kwh] of Object.entries(consumi.fasce)){
+      const prezzo=(pun[f] ?? pun.F0)*(1+cfgStg.perditeRete);
+      const voce=prezzo*kwh;
+      dettaglioFasce[f]={prezzo,kwh,importo:voce}; energia+=voce;
+    }
+    energia += cfgStg.cpstgd_eur_kWh*consumi.totale;
+    return {quotaFissa:cfgStg.parametroGamma_eur_pod_anno, energia,
+            totale:cfgStg.parametroGamma_eur_pod_anno+energia, dettaglioFasce};
+  },
+  dispacciamento(consumi, cfgStg){
+    const kwh = cfgStg.dispacciamentoPerditeIncluse ? consumi.totale
+              : consumi.totale*(1+cfgStg.perditeRete);
+    return cfgStg.dispacciamento_eur_kWh*kwh;
+  },
+  rete(consumi, potenzaKw, cfgRete){                 // Loop 1: €/mese -> x12
+    const quotaFissa   = cfgRete.quotaFissa_eur_mese*12;
+    const quotaPotenza = cfgRete.quotaPotenza_eur_kW_mese*potenzaKw*12;
+    const quotaEnergia = cfgRete.quotaEnergia_eur_kWh*consumi.totale;
+    return {quotaFissa,quotaPotenza,quotaEnergia,
+            totale:quotaFissa+quotaPotenza+quotaEnergia};
+  },
+  oneri(consumi, residente, cfgOneri){               // Loop 2: kWh misurati
+    const quotaFissa = residente?0:cfgOneri.quotaFissaNonResidente_eur_anno;
+    const quotaEnergia = cfgOneri.quotaEnergia_eur_kWh*consumi.totale;
+    return {quotaFissa,quotaEnergia,totale:quotaFissa+quotaEnergia};
+  },
+  accisa(consumi, residente, potenzaKw, cfgImposte){
+    const cm=consumi.mensile, ag=cfgImposte.esenzioneResidente;
+    let imp;
+    if(residente && potenzaKw<=ag.potenzaMax_kW){
+      if(cm<=ag.kWhMese) imp=0;
+      else if(cm<=ag.sogliaRecupero_kWhMese) imp=cm-ag.kWhMese;
+      else{
+        const esenzResidua=Math.max(0, ag.kWhMese-(cm-ag.sogliaRecupero_kWhMese));
+        imp=cm-esenzResidua;
+      }
+    }else imp=cm;
+    return imp*cfgImposte.accisa_eur_kWh*12;
+  },
+  bolletta(tipo, input, offerta, config, pun){
+    const consumi=this.normalizzaConsumi(input);
+    const materia = tipo==="ml" ? this.materiaMercatoLibero(consumi,offerta,pun)
+                                : this.materiaSTG(consumi,config.stg,pun);
+    const disp=this.dispacciamento(consumi,config.stg);
+    const rete=this.rete(consumi,input.potenzaKw,config.rete);
+    const oneri=this.oneri(consumi,input.residente,config.oneriSistema);
+    const accisa=this.accisa(consumi,input.residente,input.potenzaKw,config.imposte);
+    const imponibile=materia.totale+disp+rete.totale+oneri.totale+accisa;
+    const iva=imponibile*config.imposte.iva;
+    return {consumi,materia,dispacciamento:disp,rete,oneri,accisa,iva,
+            imponibile,totale:imponibile+iva};
+  }
+};
+
+/* ============================================================
+ *  UI
+ * ============================================================ */
+const $=id=>document.getElementById(id);
+let stato={periodo:"annuale", fasce:"mono", torta:"ml"};
+let grafico=null;
+
+function leggiInput(){
+  return {
+    periodo:stato.periodo,
+    multiorario:stato.fasce==="multi",
+    kWh: stato.fasce==="multi"
+      ? {F1:+$("kF1").value,F2:+$("kF2").value,F3:+$("kF3").value}
+      : {F0:+$("kF0").value},
+    potenzaKw:+$("potenza").value,
+    residente:$("residente").value==="1"
+  };
+}
+function leggiOfferta(){
+  return {
+    nome:$("nomeOfferta").value||"Offerta",
+    quotaFissa:+$("qfOfferta").value,
+    tipoPrezzo:$("tipoPrezzo").value,
+    spread:+$("spread").value,
+    prezzoFisso:+$("prezzoFisso").value,
+    perdite:(+$("perdite").value)/100,
+    prezzoComprensivoPerdite:$("prezzoConPerdite").checked
+  };
+}
+function leggiPun(){
+  if($("punManuale").checked){
+    const f0=+$("punF0").value;
+    return stato.fasce==="multi"
+      ? {F0:f0,F1:+$("punF1").value,F2:+$("punF2").value,F3:+$("punF3").value}
+      : {F0:f0};
+  }
+  const p=TariffManager.punDelMese($("mesePun").value) || {F0:0.115};
+  return p;
+}
+
+const eur=v=>v.toLocaleString("it-IT",{style:"currency",currency:"EUR"});
+const eurKwh=v=>v.toLocaleString("it-IT",{minimumFractionDigits:4,maximumFractionDigits:5});
+
+function righeBolletta(b, mostraFasce, div12){
+  const k=v=>eur(v/div12);
+  let h="";
+  const sub=(t,v)=>`<div class="voce sub"><span>${t}</span><span class="mono">${k(v)}</span></div>`;
+  h+=`<div class="voce"><span>Spesa materia energia</span><span class="imp mono">${k(b.materia.totale)}</span></div>`;
+  h+=sub("Quota fissa / commercializzazione", b.materia.quotaFissa);
+  if(mostraFasce){
+    for(const [f,d] of Object.entries(b.materia.dettaglioFasce))
+      h+=sub(`Energia ${f==="F0"?"":f} — ${eurKwh(d.prezzo)} €/kWh × ${Math.round(d.kwh/div12)} kWh`, d.importo);
+  }else h+=sub("Energia (perdite incluse)", b.materia.energia);
+  h+=`<div class="voce"><span>Dispacciamento</span><span class="imp mono">${k(b.dispacciamento)}</span></div>`;
+  h+=`<div class="voce"><span>Trasporto e gestione contatore</span><span class="imp mono">${k(b.rete.totale)}</span></div>`;
+  h+=sub("Quota fissa", b.rete.quotaFissa)+sub("Quota potenza", b.rete.quotaPotenza)+sub("Quota energia", b.rete.quotaEnergia);
+  h+=`<div class="voce"><span>Oneri di sistema</span><span class="imp mono">${k(b.oneri.totale)}</span></div>`;
+  if(b.oneri.quotaFissa>0) h+=sub("Quota fissa (non residente)", b.oneri.quotaFissa);
+  h+=`<div class="voce"><span>Accisa</span><span class="imp mono">${k(b.accisa)}</span></div>`;
+  h+=`<div class="voce"><span>IVA 10%</span><span class="imp mono">${k(b.iva)}</span></div>`;
+  h+=`<div class="voce tot"><span>Totale ${div12===12?"mensile":"annuo"}</span><span class="mono">${k(b.totale)}</span></div>`;
+  return h;
+}
+
+function macroVoci(b){
+  return {
+    labels:["Materia energia","Trasporto e gestione","Oneri di sistema","Imposte (accisa+IVA)"],
+    valori:[Math.max(b.materia.totale,0)+b.dispacciamento, b.rete.totale,
+            b.oneri.totale, b.accisa+b.iva]
+  };
+}
+
+function aggiorna(){
+  const cfg=TariffManager.config;
+  const input=leggiInput(), offerta=leggiOfferta(), pun=leggiPun();
+  const ml =CalcEngine.bolletta("ml", input, offerta, cfg, pun);
+  const stg=CalcEngine.bolletta("stg",input, offerta, cfg, pun);
+  const div12 = stato.periodo==="mensile" ? 12 : 1;
+
+  $("titoloML").textContent=offerta.nome+" (mercato libero)";
+  $("sottoML").textContent= offerta.tipoPrezzo==="fisso"
+    ? `Prezzo fisso ${eurKwh(offerta.prezzoFisso)} €/kWh · QF ${eur(offerta.quotaFissa)}/anno`
+    : `PUN + ${eurKwh(offerta.spread)} €/kWh · QF ${eur(offerta.quotaFissa)}/anno · perdite ${(offerta.perdite*100).toFixed(1)}%`;
+  $("sottoSTG").textContent=`PUN ex post + dispacciamento · γ ${eur(cfg.stg.parametroGamma_eur_pod_anno)}/POD/anno · perdite ${(cfg.stg.perditeRete*100).toFixed(1)}%`;
+  $("voceML").innerHTML=righeBolletta(ml, input.multiorario, div12);
+  $("voceSTG").innerHTML=righeBolletta(stg, input.multiorario, div12);
+
+  const delta=ml.totale-stg.totale;
+  const el=$("heroDelta");
+  el.textContent=(delta>=0?"+":"−")+eur(Math.abs(delta)/div12);
+  el.className="delta mono "+(delta>=0?"extra":"risparmio");
+  $("heroLabel").textContent=`Differenza ${div12===12?"mensile":"annua"} — ${offerta.nome} vs STG`;
+  $("heroDettaglio").textContent = delta>=0
+    ? `Con questa offerta paghi di più del STG (${eur(ml.totale/div12)} vs ${eur(stg.totale/div12)})`
+    : `Con questa offerta risparmi rispetto al STG (${eur(ml.totale/div12)} vs ${eur(stg.totale/div12)})`;
+
+  const m=macroVoci(stato.torta==="ml"?ml:stg);
+  const tot=m.valori.reduce((a,b)=>a+b,0);
+  if(grafico) grafico.destroy();
+  grafico=new Chart($("torta"),{
+    type:"doughnut",
+    data:{labels:m.labels.map((l,i)=>`${l} (${(m.valori[i]/tot*100).toFixed(1)}%)`),
+      datasets:[{data:m.valori,
+        backgroundColor:["#B0413E","#5B8DB8","#E8A013","#6B7280"],
+        borderColor:"#F6F5F1",borderWidth:3}]},
+    options:{plugins:{legend:{position:"bottom",labels:{boxWidth:14,font:{size:12}}},
+      tooltip:{callbacks:{label:c=>` ${eur(c.parsed/div12)}`}}}}
+  });
+}
+
+/* -------- wiring -------- */
+function wiring(){
+  document.querySelectorAll("#tgPeriodo button").forEach(b=>b.onclick=()=>{
+    stato.periodo=b.dataset.v;
+    document.querySelectorAll("#tgPeriodo button").forEach(x=>x.classList.toggle("attivo",x===b));
+    aggiorna();
+  });
+  document.querySelectorAll("#tgFasce button").forEach(b=>b.onclick=()=>{
+    stato.fasce=b.dataset.v;
+    document.querySelectorAll("#tgFasce button").forEach(x=>x.classList.toggle("attivo",x===b));
+    $("boxMono").style.display=stato.fasce==="mono"?"":"none";
+    $("boxMulti").style.display=stato.fasce==="multi"?"":"none";
+    $("punFasceBox").style.display=stato.fasce==="multi"&&$("punManuale").checked?"grid":"none";
+    aggiorna();
+  });
+  $("tipoPrezzo").onchange=()=>{
+    const fisso=$("tipoPrezzo").value==="fisso";
+    $("boxSpread").style.display=fisso?"none":"";
+    $("boxFisso").style.display=fisso?"":"none";
+    aggiorna();
+  };
+  $("punManuale").onchange=()=>{
+    $("boxPunManuale").style.display=$("punManuale").checked?"":"none";
+    $("mesePun").disabled=$("punManuale").checked;
+    $("punFasceBox").style.display=stato.fasce==="multi"&&$("punManuale").checked?"grid":"none";
+    aggiorna();
+  };
+  $("btTortaML").onclick=()=>{stato.torta="ml";
+    $("btTortaML").classList.add("attivo");$("btTortaSTG").classList.remove("attivo");aggiorna();};
+  $("btTortaSTG").onclick=()=>{stato.torta="stg";
+    $("btTortaSTG").classList.add("attivo");$("btTortaML").classList.remove("attivo");aggiorna();};
+  document.querySelectorAll("input,select").forEach(e=>e.addEventListener("input",aggiorna));
+}
+
+async function avvio(){
+  await TariffManager.carica();
+  const cfg=TariffManager.config;
+  // badge validità (opzione c)
+  const oggi=new Date().toISOString().slice(0,10);
+  const badge=$("badgeTariffe");
+  badge.textContent=`tariffe ${cfg.meta.versione} · fino al ${cfg.meta.validoAl}`;
+  if(oggi>cfg.meta.validoAl) badge.classList.add("scaduto");
+  // avvisi
+  $("avvisi").innerHTML=TariffManager.avvisi.map(a=>`<div class="avviso">⚠ ${a}</div>`).join("");
+  // dropdown mesi PUN
+  const sel=$("mesePun");
+  for(const m of TariffManager.mesiPun()){
+    const p=TariffManager.punDelMese(m);
+    const o=document.createElement("option");
+    o.value=m;
+    o.textContent=`${m} — ${eurKwh(p.F0)} €/kWh${p.parziale?" (parziale)":""}`;
+    sel.appendChild(o);
+  }
+  $("notaPun").textContent=`Fonte PUN: ${TariffManager.pun.meta.fonte} · agg. ${TariffManager.pun.meta.ultimoAggiornamento}`;
+  wiring();
+  aggiorna();
+}
+avvio();
+</script>
+</body>
+</html>

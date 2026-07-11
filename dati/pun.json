@@ -1,0 +1,13 @@
+{
+  "meta": {
+    "fonte": "GME - PUN Index GME, medie mensili elaborate da scripts/aggiorna_pun.py",
+    "unita": "eur/kWh",
+    "ultimoAggiornamento": "2026-07-11",
+    "nota": "Valori segnaposto realistici (media maggio 2026 ~0,111 eur/kWh da fonti secondarie). La GitHub Action sovrascrive questo file con i dati ufficiali GME."
+  },
+  "mesi": {
+    "2026-04": { "F0": 0.104, "F1": 0.112, "F2": 0.108, "F3": 0.094 },
+    "2026-05": { "F0": 0.111, "F1": 0.118, "F2": 0.114, "F3": 0.101 },
+    "2026-06": { "F0": 0.115, "F1": 0.124, "F2": 0.118, "F3": 0.104 }
+  }
+}
