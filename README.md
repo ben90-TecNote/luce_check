@@ -1,4 +1,4 @@
-# Bolletta Radar
+# Luce Check
 
 Simulatore di bolletta elettrica domestica (CTE mercato libero vs Servizio a Tutele Graduali). Single-file HTML, stile TecNote, senza build.
 
