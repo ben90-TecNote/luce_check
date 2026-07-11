@@ -474,7 +474,16 @@ function aggiorna(){
 /* -------- wiring -------- */
 function wiring(){
   document.querySelectorAll("#tgPeriodo button").forEach(b=>b.onclick=()=>{
-    stato.periodo=b.dataset.v;
+    const nuovo=b.dataset.v;
+    if(nuovo!==stato.periodo){
+      const fattore = nuovo==="mensile" ? (1/12) : 12;
+      if(stato.fasce==="multi"){
+        ["kF1","kF2","kF3"].forEach(id=>{ const el=$(id); el.value=(+el.value*fattore).toFixed(2); });
+      }else{
+        const el=$("kF0"); el.value=(+el.value*fattore).toFixed(2);
+      }
+    }
+    stato.periodo=nuovo;
     document.querySelectorAll("#tgPeriodo button").forEach(x=>x.classList.toggle("attivo",x===b));
     aggiorna();
   });
