@@ -1,12 +1,9 @@
 name: Aggiorna PUN da GME
 
 on:
-  schedule:
-    # Ogni giorno 2 del mese alle 06:30 UTC (mese precedente consolidato)
-    - cron: "30 6 2 * *"
-    # Ogni lunedì alle 06:30 UTC (mese corrente parziale)
-    - cron: "30 6 * * 1"
   workflow_dispatch: {}
+  # Scheduling automatico disattivato: GME richiede registrazione API dal 15/10/2025.
+  # Aggiornamento di dati/pun.json ora manuale, una volta al mese.
 
 permissions:
   contents: write
