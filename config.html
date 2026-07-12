@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luce Check — Configurazione ARERA</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--carta:#F6F5F1;--inchiostro:#1B2A41;--grigio:#6B7280;--linea:#D8D5CC;
+  --stg:#0E7C7B;--verde:#2F7D4F;--verdino:#E7F4EA;--warn:#B7791F;--warn-bg:#FFF7E6;
+  --rosso:#B03030;--rosso-bg:#FBECEC}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--carta);color:var(--inchiostro);
+  font:15px/1.5 "Segoe UI",system-ui,-apple-system,sans-serif;padding-bottom:60px}
+.mono{font-family:"Cascadia Code","Consolas","Menlo",monospace;font-variant-numeric:tabular-nums}
+header{border-bottom:3px double var(--inchiostro);padding:20px 20px 12px;
+  display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;justify-content:space-between;
+  max-width:980px;margin:0 auto}
+header h1{font-size:24px;font-weight:800}
+header h1 span{color:var(--stg)}
+header a{font-size:12.5px;color:var(--inchiostro);text-decoration:none;
+  border:1px solid var(--linea);border-radius:99px;padding:3px 10px;background:#fff}
+main{max-width:980px;margin:0 auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.blocco{background:#fff;border:1px solid var(--linea);border-radius:10px;padding:16px}
+.blocco h2{font-size:13px;text-transform:uppercase;letter-spacing:1.5px;color:var(--grigio);
+  margin-bottom:10px;border-bottom:1px solid var(--linea);padding-bottom:4px}
+.sezione{border:1px solid var(--linea);border-radius:8px;padding:12px;margin:10px 0}
+.sezione>h3{font-size:13.5px;margin-bottom:6px}
+.campo{display:grid;grid-template-columns:1fr 220px 92px;gap:10px;align-items:center;
+  padding:6px 0;border-bottom:1px dashed var(--linea)}
+.campo:last-child{border-bottom:0}
+@media(max-width:640px){.campo{grid-template-columns:1fr}}
+.campo .etich{font-size:13.5px}
+.campo .percorso{font-size:10.5px;color:var(--grigio)}
+.campo input[type=number],.campo input[type=text]{width:100%;padding:6px 8px;
+  border:1px solid var(--linea);border-radius:6px;font-size:13.5px;background:var(--carta)}
+.campo input:focus{outline:2px solid var(--stg);border-color:transparent}
+.badgeMod{display:inline-flex;gap:4px;align-items:center;font-size:10.5px;font-weight:700;
+  padding:1px 7px;border-radius:99px;background:var(--warn-bg);color:var(--warn);
+  border:1px solid var(--warn)}
+.badgeMod button{border:0;background:none;color:var(--warn);cursor:pointer;font-weight:700}
+.bott{padding:8px 14px;border:1px solid var(--inchiostro);background:var(--inchiostro);
+  color:#fff;border-radius:6px;cursor:pointer;font-size:13.5px;font-weight:600}
+.bott.sec{background:#fff;color:var(--inchiostro)}
+.bott.pericolo{background:#fff;color:var(--rosso);border-color:var(--rosso)}
+.barra{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.nota{font-size:11.5px;color:var(--grigio);margin-top:6px}
+.avviso{background:var(--warn-bg);border:1px solid #E7C57A;color:#7A5A12;border-radius:8px;
+  padding:9px 14px;font-size:13px;margin-bottom:8px}
+.ok{background:var(--verdino);border:1px solid #9CC9AC;color:var(--verde);border-radius:8px;
+  padding:9px 14px;font-size:13px;margin-bottom:8px}
+footer{max-width:980px;margin:26px auto 0;padding:0 20px;font-size:11.5px;color:var(--grigio)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Luce <span>Check</span> — Configurazione ARERA</h1>
+  <a href="index.html">← Torna al calcolatore</a>
+</header>
+
+<main>
+  <div id="messaggi"></div>
+  <section class="blocco">
+    <h2>Valori di configurazione (config_tariffe.json)</h2>
+    <div class="nota" style="margin-bottom:8px">
+      Le modifiche si salvano <b>solo in questo browser</b> (localStorage, non su GitHub):
+      il calcolatore le applica sopra i valori del file. Per renderle permanenti per tutti,
+      riporta i valori in <span class="mono">config_tariffe.json</span> nel repo.
+    </div>
+    <div id="form"></div>
+    <div class="barra">
+      <button class="bott" id="btSalva">Salva modifiche</button>
+      <button class="bott pericolo" id="btResetAll">Ripristina tutto ai valori di default</button>
+    </div>
+  </section>
+
+  <section class="blocco">
+    <h2>Backup / Excel</h2>
+    <div class="barra">
+      <button class="bott sec" id="btXlsxOut">Esporta XLSX</button>
+      <button class="bott sec" id="btXlsxIn">Importa XLSX</button>
+      <input type="file" id="fileXlsx" accept=".xlsx,.xls" style="display:none">
+    </div>
+    <div class="nota">Export: una riga per campo (percorso, valore, tipo, origine).
+      L'import mostra sempre il riepilogo delle modifiche prima di applicarle.</div>
+  </section>
+</main>
+
+<footer>Fase 1: salvataggio locale al browser. Il modulo TariffConfigStore isola il punto di
+salvataggio per una futura scrittura diretta su GitHub. <span class="mono">dati/pun.json</span>
+resta fuori scope (flusso di aggiornamento manuale esistente).</footer>
+
+<script>
+"use strict";
+/* fallback identico a index.html per l'uso in locale (file://) */
+const CONFIG_FALLBACK={meta:{versione:"2026-Q3",validoDal:"2026-07-01",validoAl:"2026-09-30",
+  fonte:"ARERA del. 219/2026, 227/2026, 575/2025 (fallback embed)"},
+ rete:{quotaFissa_eur_mese:1.92,quotaPotenza_eur_kW_mese:1.9766,quotaEnergia_eur_kWh:0.01473},
+ oneriSistema:{quotaEnergia_eur_kWh:0.033153,quotaFissaNonResidente_eur_anno:90.64},
+ stg:{parametroGamma_eur_pod_anno:-72.65,dispacciamento_eur_kWh:0.013,
+   dispacciamentoPerditeIncluse:true,cpstgd_eur_kWh:0,perditeRete:0.102},
+ imposte:{accisa_eur_kWh:0.0227,
+   esenzioneResidente:{kWhMese:150,potenzaMax_kW:3,sogliaRecupero_kWhMese:220},iva:0.10}};
+
+/* ============ TariffConfigStore — punto unico di salvataggio (fase 2: GitHub) ============ */
+const TariffConfigStore={
+  K:"TariffOverride_v1",
+  getOverride(){try{const o=JSON.parse(localStorage.getItem(this.K));
+    return(o&&typeof o==="object")?o:{};}catch(e){return{};}},
+  save(partial){localStorage.setItem(this.K,JSON.stringify(partial));},
+  resetField(path){
+    const o=this.getOverride();
+    const parti=path.split(".");let nodo=o;const pila=[];
+    for(let i=0;i<parti.length-1;i++){
+      if(!nodo[parti[i]])return;pila.push([nodo,parti[i]]);nodo=nodo[parti[i]];}
+    delete nodo[parti[parti.length-1]];
+    for(let i=pila.length-1;i>=0;i--){          // pota i rami vuoti
+      const[p,k]=pila[i];
+      if(p[k]&&typeof p[k]==="object"&&!Object.keys(p[k]).length)delete p[k];}
+    this.save(o);
+  },
+  resetAll(){localStorage.removeItem(this.K);}
+};
+
+/* ============ utilità struttura ============ */
+function foglie(obj,prefisso){          // [{path,valore,tipo}]
+  const out=[];
+  for(const[k,v]of Object.entries(obj||{})){
+    const p=prefisso?prefisso+"."+k:k;
+    if(v!=null&&typeof v==="object"&&!Array.isArray(v))out.push(...foglie(v,p));
+    else out.push({path:p,valore:v,tipo:typeof v});
+  }
+  return out;
+}
+function leggiPath(obj,path){
+  return path.split(".").reduce((n,k)=>n==null?undefined:n[k],obj);
+}
+function scriviPath(obj,path,valore){
+  const parti=path.split(".");let nodo=obj;
+  for(let i=0;i<parti.length-1;i++){
+    if(nodo[parti[i]]==null||typeof nodo[parti[i]]!=="object")nodo[parti[i]]={};
+    nodo=nodo[parti[i]];}
+  nodo[parti[parti.length-1]]=valore;
+}
+function abbellisci(path){
+  const ultimo=path.split(".").pop();
+  const t=ultimo.replace(/_/g," ").replace(/([a-z])([A-Z])/g,"$1 $2");
+  return t.charAt(0).toUpperCase()+t.slice(1);
+}
+
+/* ============ stato pagina ============ */
+let shipped=null;                       // config_tariffe.json come da repo
+const $=id=>document.getElementById(id);
+function msg(html,cls){$("messaggi").innerHTML=`<div class="${cls||"ok"}">${html}</div>`;
+  setTimeout(()=>{$("messaggi").innerHTML="";},6000);}
+
+/* ============ rendering form dinamico (nessun campo hard-codato) ============ */
+function renderForm(){
+  const override=TariffConfigStore.getOverride();
+  const box=$("form");box.innerHTML="";
+  (function sezione(obj,prefisso,contenitore){
+    /* prima le foglie del livello, poi le sotto-sezioni */
+    const fogliaHtml=[];
+    const rami=[];
+    for(const[k,v]of Object.entries(obj)){
+      const p=prefisso?prefisso+"."+k:k;
+      if(v!=null&&typeof v==="object"&&!Array.isArray(v))rami.push([k,v,p]);
+      else fogliaHtml.push({k,v,p});
+    }
+    for(const f of fogliaHtml){
+      const ov=leggiPath(override,f.p);
+      const corrente=ov!==undefined?ov:f.v;
+      const div=document.createElement("div");div.className="campo";
+      const tipo=typeof f.v;
+      let inputHtml;
+      if(tipo==="boolean")
+        inputHtml=`<input type="checkbox" data-path="${f.p}" data-tipo="boolean" ${corrente?"checked":""}>`;
+      else if(tipo==="number")
+        inputHtml=`<input type="number" step="any" data-path="${f.p}" data-tipo="number" value="${corrente}">`;
+      else
+        inputHtml=`<input type="text" data-path="${f.p}" data-tipo="string" value="${String(corrente).replace(/"/g,"&quot;")}">`;
+      div.innerHTML=`<div><div class="etich">${abbellisci(f.p)}</div>
+        <div class="percorso mono">${f.p}</div></div>
+        <div>${inputHtml}</div>
+        <div class="slotBadge" data-path="${f.p}">${ov!==undefined
+          ?`<span class="badgeMod">Modificato <button title="Torna al default" data-reset="${f.p}">✕</button></span>`:""}</div>`;
+      contenitore.appendChild(div);
+    }
+    for(const[k,v,p]of rami){
+      const sez=document.createElement("div");sez.className="sezione";
+      sez.innerHTML=`<h3>${abbellisci(k)} <span class="percorso mono">${p}</span></h3>`;
+      contenitore.appendChild(sez);
+      sezione(v,p,sez);
+    }
+  })(shipped,"",box);
+  box.querySelectorAll("[data-reset]").forEach(b=>b.onclick=()=>{
+    TariffConfigStore.resetField(b.dataset.reset);renderForm();
+    msg(`Campo <span class="mono">${b.dataset.reset}</span> riportato al default.`);
+  });
+}
+
+/* ============ salvataggio: diff form vs shipped ============ */
+function leggiFormComeOverride(){
+  const override={};let errori=[];
+  $("form").querySelectorAll("input[data-path]").forEach(e=>{
+    const path=e.dataset.path,tipo=e.dataset.tipo;
+    const def=leggiPath(shipped,path);
+    let val;
+    if(tipo==="boolean")val=e.checked;
+    else if(tipo==="number"){
+      val=parseFloat(String(e.value).replace(",","."));
+      if(!isFinite(val)){errori.push(path+": numero non valido");return;}}
+    else val=e.value;
+    if(val!==def)scriviPath(override,path,val);
+  });
+  return{override,errori};
+}
+
+/* ============ XLSX ============ */
+function esportaXlsx(){
+  const override=TariffConfigStore.getOverride();
+  const righe=foglie(shipped).map(f=>{
+    const ov=leggiPath(override,f.path);
+    return{percorso:f.path,
+      valore:ov!==undefined?ov:f.valore,
+      tipo:f.tipo,
+      origine:ov!==undefined?"override":"default"};
+  });
+  const ws=XLSX.utils.json_to_sheet(righe,{header:["percorso","valore","tipo","origine"]});
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Config");
+  XLSX.writeFile(wb,"config_arera_luce_check.xlsx");
+}
+function importaXlsx(file){
+  const fr=new FileReader();
+  fr.onload=()=>{
+    try{
+      const wb=XLSX.read(fr.result,{type:"array"});
+      const righe=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:""});
+      const modifiche=[],scartate=[];
+      for(const r of righe){
+        const path=String(r.percorso||"").trim();if(!path)continue;
+        const def=leggiPath(shipped,path);
+        if(def===undefined){scartate.push(`${path}: percorso inesistente`);continue;}
+        const tipoDef=typeof def;let val=r.valore;
+        if(tipoDef==="number"){
+          val=typeof val==="number"?val:parseFloat(String(val).replace(",","."));
+          if(!isFinite(val)){scartate.push(`${path}: atteso numero, trovato "${r.valore}"`);continue;}
+        }else if(tipoDef==="boolean"){
+          const s=String(val).trim().toUpperCase();
+          if(val===true||s==="TRUE"||s==="1")val=true;
+          else if(val===false||s==="FALSE"||s==="0")val=false;
+          else{scartate.push(`${path}: atteso booleano, trovato "${r.valore}"`);continue;}
+        }else val=String(val);
+        if(val!==def)modifiche.push({path,da:def,a:val});
+      }
+      if(!modifiche.length){
+        msg("Nessuna modifica rilevata rispetto ai valori di default."
+          +(scartate.length?`<br>Righe scartate: ${scartate.length}`:""),"avviso");
+        return;}
+      const elenco=modifiche.map(m=>`• ${m.path}: ${m.da} → ${m.a}`).join("\n");
+      const extra=scartate.length?`\n\nRighe scartate (${scartate.length}):\n`+scartate.join("\n"):"";
+      if(!confirm(`${modifiche.length} modifiche rilevate:\n\n${elenco}${extra}\n\nApplicarle come override locale?`))return;
+      const override={};
+      for(const m of modifiche)scriviPath(override,m.path,m.a);
+      TariffConfigStore.save(override);
+      renderForm();
+      msg(`${modifiche.length} modifiche applicate come override locale.`
+        +(scartate.length?` ${scartate.length} righe scartate.`:""));
+    }catch(e){msg("File XLSX non leggibile: "+e.message,"avviso");}
+  };
+  fr.readAsArrayBuffer(file);
+}
+
+/* ============ avvio ============ */
+async function avvio(){
+  try{
+    const r=await fetch("config_tariffe.json",{cache:"no-store"});
+    if(!r.ok)throw 0;shipped=await r.json();
+  }catch(e){
+    shipped=CONFIG_FALLBACK;
+    msg("config_tariffe.json non raggiungibile: mostro i valori integrati (2026-Q3).","avviso");
+  }
+  renderForm();
+  $("btSalva").onclick=()=>{
+    const{override,errori}=leggiFormComeOverride();
+    if(errori.length){msg("Correzioni necessarie:<br>"+errori.join("<br>"),"avviso");return;}
+    TariffConfigStore.save(override);
+    renderForm();
+    const n=foglie(override).length;
+    msg(n?`Salvato nel browser: ${n} campi in override (solo locale, non su GitHub).`
+        :"Nessuna differenza dai default: override svuotato.");
+  };
+  $("btResetAll").onclick=()=>{
+    if(!confirm("Rimuovere TUTTE le modifiche locali e tornare ai valori di config_tariffe.json?"))return;
+    TariffConfigStore.resetAll();renderForm();
+    msg("Override svuotato: valori di default attivi.");
+  };
+  $("btXlsxOut").onclick=esportaXlsx;
+  $("btXlsxIn").onclick=()=>$("fileXlsx").click();
+  $("fileXlsx").onchange=e=>{if(e.target.files[0])importaXlsx(e.target.files[0]);e.target.value="";};
+}
+avvio();
+</script>
+</body>
+</html>
