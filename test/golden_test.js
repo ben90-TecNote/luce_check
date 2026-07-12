@@ -17,7 +17,7 @@ function sezione(da,a){
 let codice=sezione("const ENUMS","/* ================= Stato & UI");
 codice=codice.replace(/const (ENUMS|CONDIZIONI|CONDIZIONI_LABEL|CalcEngine|CteParser|OfferStore|SEED|XLSX_COLONNE)=/g,
   "globalThis.$1=");
-codice=codice.replace(/function (validaOfferta|migraV1|statoScadenza|esportaXlsx|importaXlsx|normalizzaRecordImport|importaConQuarantena)\(/g,
+codice=codice.replace(/function (validaOfferta|migraV1|statoScadenza|esportaXlsx|importaXlsx|normalizzaRecordImport|importaConQuarantena|deepMerge|leggiTariffOverride)\(/g,
   "globalThis.$1=function(");
 eval(codice);
 
@@ -121,6 +121,20 @@ ok("import: virgole, TRUE/1, data it->ISO, sconto v1",
   rec.p0===0.15&&rec.biorariaDisp===true&&rec.prezzoConPerdite===true
   &&rec.scadenza==="2026-12-31"&&rec.scontoTipo==="eur_anno"&&rec.scontoValore===18
   &&validaOfferta(rec).ok);
+
+/* ============ OVERRIDE CONFIG (deep merge) ============ */
+console.log("— Override configurazione (deep merge) —");
+const merged=deepMerge(cfgLive,{stg:{dispacciamento_eur_kWh:0.02},imposte:{iva:0.22}});
+ok("override vince sulla foglia",merged.stg.dispacciamento_eur_kWh===0.02&&merged.imposte.iva===0.22);
+ok("rami non toccati preservati",
+  merged.stg.parametroGamma_eur_pod_anno===cfgLive.stg.parametroGamma_eur_pod_anno
+  &&merged.rete.quotaFissa_eur_mese===cfgLive.rete.quotaFissa_eur_mese
+  &&merged.imposte.esenzioneResidente.kWhMese===150);
+ok("base non mutata",cfgLive.imposte.iva===0.10&&cfgLive.stg.dispacciamento_eur_kWh===0.013);
+const bOvr=CalcEngine.bolletta("stg",inp2700,null,merged,punX);
+const bStd=CalcEngine.bolletta("stg",inp2700,null,cfgLive,punX);
+ok("motore usa i valori mergiati",
+  Math.abs((bOvr.dispacciamento-bStd.dispacciamento)-(0.02-0.013)*2700)<1e-9);
 
 /* ============ SCADENZE ============ */
 console.log("— Scadenze —");
