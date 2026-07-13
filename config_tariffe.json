@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "versione": "2026-Q3",
+    "validoDal": "2026-07-01",
+    "validoAl": "2026-09-30",
+    "fonte": "ARERA del. 219/2026/R/eel, 218/2026/R/eel, 227/2026/R/com, 575/2025/R/eel (tabelle SEN 1/7/2026)",
+    "ultimoAggiornamento": "2026-07-13",
+    "note": "Aggiornare ogni trimestre da https://www.servizioelettriconazionale.it/it-IT/tariffe e https://www.arera.it/consumatori/valori-della-materia-energia-per-il-servizio-a-tutele-graduali Fonti e cadenze: vedi FONTI.md."
+  },
+  "rete": {
+    "descrizione": "Trasporto e gestione contatore - Tariffa TD domestici (quote MENSILI come da tabella ARERA)",
+    "quotaFissa_eur_mese": 1.92,
+    "quotaPotenza_eur_kW_mese": 1.9766,
+    "quotaEnergia_eur_kWh": 0.01473
+  },
+  "oneriSistema": {
+    "descrizione": "ASOS + ARIM. Quota fissa applicata SOLO ai non residenti (ASOS 9509,16 c€/POD/anno, del. 227/2026/R/com; ARIM senza quota fissa per residenza). Quota potenza non applicata ai domestici.",
+    "quotaEnergia_eur_kWh": 0.033153,
+    "quotaFissaNonResidente_eur_anno": 95.09
+  },
+  "stg": {
+    "descrizione": "Servizio a Tutele Graduali domestici non vulnerabili (TIV, del. 362/2023)",
+    "parametroGamma_eur_pod_anno": -72.65,
+    "affidabilitaGamma": "60% - valore 2024/25, aggiornato annualmente da ARERA: verificare",
+    "dispacciamento_eur_kWh": 0.013,
+    "dispacciamentoPerditeIncluse": true,
+    "cpstgd_eur_kWh": 0.0,
+    "perditeRete": 0.102
+  },
+  "imposte": {
+    "accisa_eur_kWh": 0.0227,
+    "esenzioneResidente": {
+      "descrizione": "Residenti con potenza <= potenzaMax: esenti i primi kWhMese; recupero progressivo 1:1 oltre sogliaRecupero (TUA, Tabella A)",
+      "kWhMese": 150,
+      "potenzaMax_kW": 3,
+      "sogliaRecupero_kWhMese": 220
+    },
+    "iva": 0.1
+  },
+  "mercatoLibero": {
+    "perditeReteDefault": 0.1,
+    "offertaDefault": {
+      "nome": "CASA FLEX",
+      "quotaFissa_eur_anno": 207.6,
+      "tipoPrezzo": "indicizzato",
+      "spread_eur_kWh": 0.01991,
+      "prezzoFisso_eur_kWh": 0.13,
+      "prezzoComprensivoPerdite": false
+    }
+  },
+  "maggiorTutelaVulnerabili": {
+    "descrizione": "Servizio di Maggior Tutela clienti vulnerabili (TIV). PED comprensivo di perdite e dispacciamento. VALORI DA COMPILARE da E2026-smt.xlsx (finche' ped=0 il benchmark Vulnerabili resta disattivato).",
+    "quotaFissaVendita_eur_mese": 0,
+    "ped_eur_kWh": 0,
+    "pedF1_eur_kWh": 0,
+    "pedF23_eur_kWh": 0
+  }
+}

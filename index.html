@@ -1,0 +1,1762 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luce Check — Comparatore CTE vs STG</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --carta:#FFFDF6; --pann:#FFFFFF; --inchiostro:#14171C; --grigio:#5F6672;
+  --linea:#E4DFCE; --input:#FAF8EF;
+  --ml:#FF4B36; --stg:#00B8A9; --accento:#00B8A9; --segnale:#FFC300;
+  --f1:#E8A013; --f2:#5B8DB8; --f3:#7A6FB0;
+  --verde:#17B978; --verdino:#E2F7EC; --verdino-bordo:#8FDDB9;
+  --warn:#A9741B; --warn-bg:#FCF3DF;
+  --rosso:#C0392B; --rosso-bg:#FBECEC;
+  --blu:#3B5B8C; --blu-bg:#EAF1FA;
+  --ombra:0 1px 2px rgba(20,23,28,.05),0 5px 16px rgba(20,23,28,.07);
+  --ombra-alta:0 2px 4px rgba(20,23,28,.08),0 10px 26px rgba(20,23,28,.13);
+}
+html[data-tema="dark"]{
+  --carta:#14171C; --pann:#1B1F26; --inchiostro:#F2EFE6; --grigio:#9AA3AF;
+  --linea:#2A2E36; --input:#232830;
+  --ml:#FF6B52; --stg:#2FE0D2; --accento:#2FE0D2; --segnale:#FFD54A;
+  --f1:#F0B94A; --f2:#7FA9CF; --f3:#9C92CC;
+  --verde:#3FD99B; --verdino:#17342A; --verdino-bordo:#2E6B51;
+  --warn:#E3B341; --warn-bg:#332B14;
+  --rosso:#E57373; --rosso-bg:#3A2020;
+  --blu:#8FB4E8; --blu-bg:#1D2938;
+  --ombra:0 1px 2px rgba(0,0,0,.35),0 5px 16px rgba(0,0,0,.35);
+  --ombra-alta:0 2px 4px rgba(0,0,0,.4),0 10px 26px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{color-scheme:light}html[data-tema="dark"]{color-scheme:dark}
+body{background:var(--carta);color:var(--inchiostro);
+  font:15px/1.5 "Segoe UI",system-ui,-apple-system,sans-serif;
+  padding-bottom:60px;padding-left:56px;
+  transition:background .25s,color .25s}
+#sidebar{position:fixed;left:0;top:0;bottom:0;width:56px;z-index:50;
+  background:var(--pann);border-right:1px solid var(--linea);
+  display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:12px}
+#sidebar button,#sidebar a{width:42px;height:42px;border-radius:11px;border:0;
+  background:transparent;cursor:pointer;font-size:19px;display:flex;
+  align-items:center;justify-content:center;color:var(--inchiostro);text-decoration:none}
+#sidebar button:hover,#sidebar a:hover{background:var(--input)}
+#sidebar button.attivo{background:var(--accento);color:#fff}
+#sidebar .spazio{flex:1}
+.pagina2{max-width:900px;margin:0 auto;padding:18px 16px;display:flex;
+  flex-direction:column;gap:14px}
+.mono{font-family:"Cascadia Code","Consolas","Menlo",monospace;font-variant-numeric:tabular-nums}
+header{border-bottom:3px double var(--inchiostro);padding:16px 20px 12px;
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  max-width:1280px;margin:0 auto}
+header h1{font-size:25px;letter-spacing:-.5px;font-weight:800}
+header h1 span{color:var(--accento)}
+.hdrDx{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hdrLink{font-size:12.5px;color:var(--inchiostro);text-decoration:none;
+  border:1px solid var(--linea);border-radius:99px;padding:4px 11px;background:var(--pann)}
+#btTema{border:1px solid var(--linea);background:var(--pann);border-radius:99px;
+  width:32px;height:32px;cursor:pointer;font-size:15px;line-height:1}
+#badgeTariffe{font-size:11.5px;padding:4px 10px;border:1px solid var(--linea);
+  border-radius:99px;background:var(--pann)}
+#badgeTariffe.scaduto{border-color:var(--warn);color:var(--warn);font-weight:700}
+main{max-width:1280px;margin:0 auto;padding:18px 16px;
+  display:grid;grid-template-columns:370px 1fr;gap:20px}
+@media(max-width:920px){main{grid-template-columns:1fr}}
+.pannello,.blocco{background:var(--pann);border:1px solid var(--linea);border-radius:14px;
+  padding:16px;box-shadow:var(--ombra)}
+.colSx,.colDx{display:flex;flex-direction:column;gap:14px}
+h2.sez{font-size:12.5px;text-transform:uppercase;letter-spacing:1.5px;color:var(--grigio);
+  margin:0 0 10px;padding-bottom:6px;padding-left:9px;border-bottom:1px solid var(--linea);
+  border-left:3px solid var(--accento);
+  display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+label{display:block;font-size:12.5px;color:var(--grigio);margin:8px 0 3px}
+input[type=number],input[type=text],input[type=date],select,textarea{
+  width:100%;padding:8px 10px;border:1px solid var(--linea);border-radius:8px;
+  font-size:14px;background:var(--input);color:var(--inchiostro)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accento);border-color:transparent}
+.riga2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.riga3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.toggle{display:flex;border:1px solid var(--linea);border-radius:9px;overflow:hidden;margin-top:2px;
+  background:var(--input)}
+.toggle button{flex:1;padding:8px 4px;border:0;background:transparent;cursor:pointer;
+  font-size:13px;color:var(--grigio)}
+.toggle button.attivo{background:var(--accento);color:#fff;font-weight:700}
+.check{display:flex;align-items:center;gap:8px;font-size:13.5px;margin-top:8px}
+.nota{font-size:11.5px;color:var(--grigio);margin-top:4px}
+.bott{padding:9px 15px;border:1px solid var(--accento);background:var(--accento);
+  color:#fff;border-radius:9px;cursor:pointer;font-size:13.5px;font-weight:700}
+.bott:hover{filter:brightness(1.08)}
+.bott.sec{background:var(--pann);color:var(--inchiostro);border-color:var(--linea)}
+.bott.mini{padding:5px 10px;font-size:12px}
+.bott:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.barraBott{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+/* interruttore ON/OFF */
+.switch{position:relative;display:inline-block;width:42px;height:24px;flex:none}
+.switch input{opacity:0;width:0;height:0}
+.switch .slider{position:absolute;inset:0;background:var(--linea);border-radius:99px;
+  cursor:pointer;transition:.2s}
+.switch .slider::before{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;
+  background:var(--pann);border-radius:99px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.switch input:checked+.slider{background:var(--verde)}
+.switch input:checked+.slider::before{transform:translateX(18px)}
+.rigaSwitch{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13.5px}
+/* segmented modello */
+.segment{display:inline-flex;border:1px solid var(--linea);border-radius:9px;overflow:hidden;
+  background:var(--input);margin-top:6px}
+.segment button{padding:7px 12px;border:0;background:transparent;cursor:pointer;
+  font-size:12.5px;color:var(--grigio)}
+.segment button.attivo{background:var(--blu);color:#fff;font-weight:700}
+/* lista offerte */
+#listaOfferte{display:flex;flex-direction:column;gap:9px;max-height:400px;overflow:auto;
+  padding:2px}
+.cardOff{border:1px solid var(--linea);border-radius:12px;
+  padding:10px 12px;cursor:pointer;background:var(--pann);display:flex;gap:10px;
+  box-shadow:var(--ombra);transition:transform .1s,box-shadow .15s}
+.cardOff:hover{transform:translateY(-1px);box-shadow:var(--ombra-alta)}
+.cardOff.sel{outline:2px solid var(--accento)}
+.cardOff .avatar{flex:none;width:34px;height:34px;border-radius:99px;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+.cardOff .corpo{flex:1;min-width:0}
+.cardOff .nm{font-weight:700;font-size:13.5px}
+.cardOff .forn{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 8px;
+  border-radius:99px;color:#fff;margin:3px 0 2px}
+.cardOff .dt{font-size:11.5px;color:var(--grigio)}
+.cardOff .destra{text-align:right;flex:none}
+.cardOff .tot{font-weight:800;font-size:14.5px;white-space:nowrap}
+.cardOff .azioni{display:flex;gap:6px;align-items:center;justify-content:flex-end;margin-top:4px}
+.cardOff .azioni button{border:0;background:none;cursor:pointer;font-size:14px;padding:2px;
+  color:var(--grigio)}
+.badge{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 8px;
+  border-radius:99px;margin-left:6px;vertical-align:middle;letter-spacing:.3px}
+.badge.scad{background:var(--rosso-bg);color:var(--rosso);border:1px solid var(--rosso)}
+.badge.warn{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn)}
+.badge.best{background:var(--segnale);color:#14171C;border:1px solid var(--segnale)}
+.badge.sconto{background:var(--blu-bg);color:var(--blu);border:1px solid var(--blu)}
+.badge.info{background:var(--blu-bg);color:var(--blu);border:1px solid var(--blu)}
+.badge.req{background:var(--rosso);color:#fff;border:1px solid var(--rosso)}
+.badge.reqok{background:transparent;color:var(--grigio);border:1px solid var(--linea)}
+.cardOff.scaduta{opacity:.55}
+#vincitore{border:2px solid var(--verdino-bordo);background:var(--verdino);
+  border-radius:14px;padding:16px 20px;display:flex;flex-wrap:wrap;gap:6px 28px;
+  align-items:baseline;justify-content:space-between;box-shadow:var(--ombra)}
+#vincitore .titolo{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--verde);font-weight:800}
+#vincitore .nome{font-size:22px;font-weight:800}
+#vincitore .cifra{font-size:30px;font-weight:800;color:var(--verde)}
+#vincitore small{color:var(--grigio);font-size:12.5px}
+#vincitore.vuoto{background:var(--pann);border-style:dashed;color:var(--grigio)}
+.wrapTab{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 9px;text-align:right;border-bottom:1px solid var(--linea);white-space:nowrap}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--grigio);
+  border-bottom:2px solid var(--accento)}
+th:first-child,td:first-child{text-align:left}
+tr.best td{background:var(--verdino);font-weight:700}
+tr.stg td{background:var(--blu-bg);color:var(--stg);font-weight:600}
+html[data-tema="dark"] tr.stg td{color:var(--accento)}
+tr.scaduta td{opacity:.5;text-decoration:line-through}
+tr.scaduta td:first-child{text-decoration:none}
+.avviso{background:var(--warn-bg);border:1px solid var(--warn);color:var(--warn);border-radius:10px;
+  padding:9px 14px;font-size:13px;margin-bottom:8px}
+.avviso.err{background:var(--rosso-bg);border-color:var(--rosso);color:var(--rosso)}
+/* dettaglio scontrino: carta con bordo zig-zag, tabella unificata allineata */
+.scontrinoCarta{background:var(--input);padding:10px 14px;border-left:1px solid var(--linea);
+  border-right:1px solid var(--linea)}
+.zz{height:11px;background-color:var(--linea);
+  --den:linear-gradient(45deg,var(--input) 25%,transparent 25%),
+        linear-gradient(-45deg,var(--input) 25%,transparent 25%)}
+.zzTop{margin-top:10px;background-image:linear-gradient(45deg,transparent 75%,var(--input) 75%),
+  linear-gradient(-45deg,transparent 75%,var(--input) 75%);
+  background-size:16px 22px;background-position:0 100%;background-repeat:repeat-x}
+.zzBot{background-image:linear-gradient(45deg,var(--input) 25%,transparent 25%),
+  linear-gradient(-45deg,var(--input) 25%,transparent 25%);
+  background-size:16px 22px;background-position:0 0;background-repeat:repeat-x}
+.qxp{display:block;font-size:10.5px;color:var(--grigio);font-weight:400}
+.scRiga.grigia .v,.scRiga.grigia .etic,.scRiga.grigia .qxp{color:var(--grigio)}
+
+.scTesta{display:grid;grid-template-columns:minmax(120px,1.2fr) 1fr 1fr;gap:6px;
+  font-size:12px;font-weight:800;padding-bottom:6px;border-bottom:2px solid var(--linea)}
+.scTesta .colML{color:var(--ml);border-top:4px solid var(--ml);padding-top:5px;border-radius:3px 3px 0 0}
+.scTesta .colSTG{color:var(--stg);border-top:4px solid var(--stg);padding-top:5px;border-radius:3px 3px 0 0}
+.scRiga{display:grid;grid-template-columns:minmax(120px,1.2fr) 1fr 1fr;gap:6px;
+  padding:5px 0;border-bottom:1px dashed var(--linea);font-size:13px;align-items:baseline}
+.scRiga .v{text-align:right;font-weight:600}
+.scRiga.sub{font-size:11.5px;color:var(--grigio);border-bottom:0;padding:1px 0}
+.scRiga.sub .etic{padding-left:12px}
+.scRiga.sub .v{font-weight:400}
+.scRiga.sconto .v,.scRiga.sconto .etic{color:var(--verde)}
+.scRiga.tot{border-top:2px solid var(--inchiostro);border-bottom:0;margin-top:6px;
+  padding-top:8px;font-size:15px;font-weight:800}
+.scSotto{font-size:11.5px;color:var(--grigio);margin:4px 0 8px}
+@media(max-width:360px){
+  .scRiga.sub{display:none}
+  .scTesta,.scRiga{grid-template-columns:minmax(90px,1.2fr) 1fr 1fr;font-size:12px}
+}
+/* badge confidenza estrazione */
+.conf{display:inline-block;width:10px;height:10px;border-radius:99px;margin-left:6px;
+  vertical-align:middle;border:1px solid rgba(0,0,0,.15)}
+.conf.alta{background:#3FA267}.conf.media{background:#E3B341}
+.conf.bassa{background:#C94F4F}.conf.na{background:#9AA3AF}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--linea);
+  border-top-color:var(--accento);border-radius:99px;animation:g .8s linear infinite;
+  vertical-align:middle;margin-right:6px}
+@keyframes g{to{transform:rotate(360deg)}}
+#wrapTorta{max-width:420px;margin:0 auto}
+dialog{border:1px solid var(--linea);border-radius:14px;padding:20px;max-width:560px;width:92%;
+  box-shadow:var(--ombra-alta);background:var(--pann);color:var(--inchiostro)}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+footer{max-width:1280px;margin:26px auto 0;padding:0 20px;font-size:11.5px;color:var(--grigio)}
+</style>
+</head>
+<body>
+
+<nav id="sidebar">
+  <button data-pg="pgConfronto" class="attivo" title="Confronto offerte">⚖️</button>
+  <button data-pg="pgBolletta" title="Carica bolletta">🧾</button>
+  <button data-pg="pgBenchmark" title="Benchmark di riferimento">🎯</button>
+  <button data-pg="pgFonti" title="Fonti ARERA">📚</button>
+  <button data-pg="pgEstrazione" title="Configurazione estrazione CTE">🤖</button>
+  <div class="spazio"></div>
+  <a href="config.html" title="Configurazione ARERA">⚙️</a>
+</nav>
+
+<header>
+  <h1>Luce <span>Check</span></h1>
+  <div class="hdrDx">
+    <a href="config.html" class="hdrLink">⚙️ Configurazione ARERA</a>
+    <button id="btTema" title="Modalità chiara/scura">🌙</button>
+    <div id="badgeTariffe" class="mono">tariffe: —</div>
+  </div>
+</header>
+
+<main class="pagina" id="pgConfronto">
+<!-- ============ COLONNA SINISTRA ============ -->
+<div class="colSx">
+  <section class="pannello">
+    <h2 class="sez">Profilo di consumo</h2>
+    <div class="toggle" id="tgPeriodo">
+      <button data-v="mensile">Mensile</button>
+      <button data-v="annuale" class="attivo">Annuale</button>
+    </div>
+    <div class="toggle" id="tgFasce" style="margin-top:8px">
+      <button data-v="mono" class="attivo">Monorario</button>
+      <button data-v="multi">Multiorario</button>
+    </div>
+    <div id="boxMono"><label>Consumo (kWh)</label>
+      <input type="number" id="kF0" value="2700" min="0" step="10"></div>
+    <div id="boxMulti" style="display:none"><div class="riga3">
+      <div><label style="color:var(--f1)">F1 (kWh)</label><input type="number" id="kF1" value="1200" min="0"></div>
+      <div><label style="color:var(--f2)">F2 (kWh)</label><input type="number" id="kF2" value="800" min="0"></div>
+      <div><label style="color:var(--f3)">F3 (kWh)</label><input type="number" id="kF3" value="700" min="0"></div>
+    </div></div>
+    <div class="riga2">
+      <div><label>Potenza impegnata</label>
+        <select id="potenza">
+          <option value="1.5">1,5 kW</option><option value="3" selected>3 kW</option>
+          <option value="4.5">4,5 kW</option><option value="6">6 kW</option><option value="10">10 kW</option>
+        </select></div>
+      <div><label>Tipologia</label>
+        <select id="residente"><option value="1" selected>Residente</option>
+        <option value="0">Non residente</option></select></div>
+    </div>
+    <label>PUN — mese di riferimento (GME)</label>
+    <select id="mesePun"></select>
+    <label class="check"><input type="checkbox" id="punManuale"> Inserisci PUN a mano</label>
+    <div id="boxPunManuale" style="display:none">
+      <label>PUN medio (€/kWh)</label><input type="number" id="punF0" value="0.115" step="0.001">
+      <div class="riga3" id="punFasceBox" style="display:none">
+        <div><label>F1</label><input type="number" id="punF1" value="0.124" step="0.001"></div>
+        <div><label>F2</label><input type="number" id="punF2" value="0.118" step="0.001"></div>
+        <div><label>F3</label><input type="number" id="punF3" value="0.104" step="0.001"></div>
+      </div>
+    </div>
+    <div class="nota" id="notaPun"></div>
+  </section>
+
+  <section class="pannello">
+    <h2 class="sez">Condizioni (attivano gli sconti)</h2>
+    <label class="check"><input type="checkbox" id="cxDom"> Domiciliazione bancaria (SEPA)</label>
+    <label class="check"><input type="checkbox" id="cxEbill"> Bolletta elettronica</label>
+    <label class="check"><input type="checkbox" id="cxGas"> Gas attivo con lo stesso venditore</label>
+    <label class="check"><input type="checkbox" id="cxSim"> SIM 1Mobile attiva</label>
+    <div class="nota">Gli sconti condizionati si applicano solo se la condizione è attiva;
+      altrimenti sono mostrati come potenziali.</div>
+  </section>
+
+  <section class="pannello">
+    <h2 class="sez">Le mie offerte <span class="nota" id="contaOfferte"></span></h2>
+    <div id="listaOfferte"></div>
+    <div class="barraBott">
+      <button class="bott" id="btNuova">+ Nuova offerta</button>
+      <button class="bott sec" id="btPdf">📄 Carica CTE (PDF)</button>
+      <button class="bott sec" id="btIncolla">Incolla testo CTE</button>
+    </div>
+    <div class="barraBott">
+      <button class="bott sec mini" id="btXlsxOut">Esporta XLSX</button>
+      <button class="bott sec mini" id="btXlsxIn">Importa XLSX</button>
+      <button class="bott sec mini" id="btJsonOut">Esporta JSON</button>
+      <button class="bott sec mini" id="btJsonIn">Importa JSON</button>
+      <input type="file" id="fileXlsx" accept=".xlsx,.xls" style="display:none">
+      <input type="file" id="fileJson" accept=".json" style="display:none">
+      <input type="file" id="filePdf" accept="application/pdf" style="display:none">
+    </div>
+    <div id="statoPdf" class="nota"></div>
+
+  </section>
+
+  <section class="pannello" id="formOfferta" style="display:none">
+    <h2 class="sez"><span id="titoloForm">Nuova offerta</span></h2>
+    <div id="boxEstrazione" style="display:none">
+      <div class="avviso" id="estrAvvisi" style="display:none"></div>
+      <div class="nota">Campi pre-compilati dall'estrazione automatica — verifica prima di salvare.
+        Confidenza: <span class="conf alta"></span> alta ·
+        <span class="conf media"></span> media · <span class="conf bassa"></span> bassa ·
+        <span class="conf na"></span> non indicata</div>
+      <details id="boxGolden" style="display:none;margin-top:6px">
+        <summary style="font-size:12.5px;cursor:pointer">Punti di riferimento CTE (golden test)</summary>
+        <pre id="goldenPre" class="mono" style="font-size:11px;white-space:pre-wrap;background:var(--carta);
+          padding:8px;border-radius:6px;margin-top:6px"></pre>
+        <button class="bott sec mini" id="btCopiaGolden">Copia per golden test</button>
+      </details>
+    </div>
+    <div class="riga2">
+      <div><label>Nome offerta</label><input type="text" id="oNome"></div>
+      <div><label>Fornitore</label><input type="text" id="oFornitore"></div>
+    </div>
+    <div class="riga3">
+      <div><label>Tipo prezzo</label>
+        <select id="oTipo"><option value="indicizzato">Indicizzato</option>
+          <option value="fisso">Fisso</option></select></div>
+      <div><label>Indice</label>
+        <select id="oIndice"><option value="—">—</option><option value="PUN">PUN</option>
+          <option value="PUN Index GME">PUN Index GME</option></select></div>
+      <div><label>Durata (mesi)</label>
+        <select id="oDurata"><option value="12">12</option><option value="24">24</option></select></div>
+    </div>
+    <label>Scadenza sottoscrivibilità CTE</label>
+    <input type="date" id="oScadenza">
+    <label class="check"><input type="checkbox" id="oBio"> Opzione bioraria disponibile (F23)</label>
+    <div><label id="lblPrezzo">Spread mono (€/kWh)</label>
+      <input type="number" id="oP0" step="0.0001" value="0.02"></div>
+    <div id="oBoxFasce" style="display:none"><div class="riga3">
+      <div><label>F1</label><input type="number" id="oP1" step="0.0001" value="0"></div>
+      <div><label>F2 (=F23)</label><input type="number" id="oP2" step="0.0001" value="0"></div>
+      <div><label>F3 (=F23)</label><input type="number" id="oP3" step="0.0001" value="0"></div>
+    </div></div>
+    <div class="riga3">
+      <div><label>Quota fissa (€/POD/anno)</label>
+        <input type="number" id="oQf" step="0.1" value="144"></div>
+      <div><label>Perdite (%)</label>
+        <input type="number" id="oPerdite" step="0.1" value="10"></div>
+      <div><label>Tetto prezzo (€/kWh)</label>
+        <input type="number" id="oPmax" step="0.001" placeholder="nessuno"></div>
+    </div>
+    <label class="check"><input type="checkbox" id="oConPerdite"> Prezzo già comprensivo di perdite</label>
+    <label class="check"><input type="checkbox" id="oDispIncluso"> Dispacciamento incluso nel prezzo</label>
+    <h2 class="sez" style="margin-top:14px">Sconto</h2>
+    <div class="riga2">
+      <div><label>Tipo sconto</label>
+        <select id="oScTipo"><option value="—">nessuno</option>
+          <option value="perc_prezzo">% sul Corrispettivo Luce</option>
+          <option value="eur_anno">€/anno</option><option value="eur_mese">€/mese</option>
+          <option value="bonus_unatantum">bonus una tantum</option></select></div>
+      <div><label>Valore (frazione se %, es. 0.05)</label>
+        <input type="number" id="oScVal" step="0.01" value="0"></div>
+    </div>
+    <div class="riga2">
+      <div><label>Condizione</label>
+        <select id="oScCond"><option value="—">nessuna</option>
+          <option value="domiciliazione">domiciliazione</option>
+          <option value="domiciliazione+eBill">domiciliazione + eBill</option>
+          <option value="dual_gas">dual gas</option>
+          <option value="telefonia_1mobile">telefonia 1Mobile</option></select></div>
+      <div><label class="check" style="margin-top:24px">
+        <input type="checkbox" id="oScLuce" checked> Sconto sulla bolletta luce</label></div>
+    </div>
+    <label>Requisiti obbligatori (senza questi l'offerta non è sottoscrivibile)</label>
+    <label class="check"><input type="checkbox" id="oReqDom"> Domiciliazione bancaria (RID/SEPA)</label>
+    <label class="check"><input type="checkbox" id="oReqEbill"> Bolletta elettronica</label>
+    <label class="check"><input type="checkbox" id="oReqGas"> Gas con lo stesso venditore</label>
+    <label class="check"><input type="checkbox" id="oReqSim"> SIM 1Mobile</label>
+    <label>Note CGF</label>
+    <textarea id="oNote" rows="2"></textarea>
+    <div class="barraBott">
+      <button class="bott" id="btSalva">Salva offerta</button>
+      <button class="bott sec" id="btAnnulla">Annulla</button>
+    </div>
+  </section>
+</div>
+
+<!-- ============ COLONNA DESTRA ============ -->
+<div class="colDx">
+  <div id="avvisi"></div>
+  <div id="vincitore" class="vuoto">Aggiungi almeno un'offerta per vedere la migliore.</div>
+
+  <section class="blocco">
+    <h2 class="sez">Dettaglio scontrino</h2>
+    <label>Offerta a confronto con lo STG:</label>
+    <select id="selScontrino" style="max-width:340px"></select>
+    <div class="scSotto" id="scSottoML"></div>
+    <div class="scSotto" id="scSottoSTG"></div>
+    <div class="zz zzTop"></div>
+    <div class="scontrinoCarta">
+      <div class="scTesta">
+        <div>Voce</div>
+        <div class="colML" id="scTitoloML">—</div>
+        <div class="colSTG" id="scTitoloBM">Tutele Graduali</div>
+      </div>
+      <div id="scTabella"></div>
+    </div>
+    <div class="zz zzBot"></div>
+  </section>
+
+  <section class="blocco">
+    <h2 class="sez">Classifica offerte
+      <button class="bott sec mini" id="btCopiaTab">Copia per Excel</button></h2>
+    <div class="wrapTab"><table id="tabRanking"></table></div>
+    <div class="nota">Offerte scadute visibili ma escluse dalla scelta della migliore. STG =
+      benchmark regolato. Sconti condizionati non attivi mostrati come potenziali, non applicati.
+      Valori nel periodo selezionato.</div>
+  </section>
+
+  <section class="blocco">
+    <h2 class="sez">Andamento PUN <span id="annoPun"></span></h2>
+    <div style="max-width:640px;margin:0 auto"><canvas id="graficoPun"></canvas></div>
+    <div class="nota">Medie mensili per fascia da dati/pun.json (fonte GME via fonti secondarie,
+      vedi Fonti).</div>
+  </section>
+
+  <section class="blocco">
+    <h2 class="sez">Composizione bolletta</h2>
+    <label>Mostra dettaglio di:</label>
+    <select id="selTorta" style="max-width:340px"></select>
+    <div id="wrapTorta"><canvas id="torta"></canvas></div>
+    <div class="nota" id="notaTorta"></div>
+  </section>
+</div>
+</main>
+
+<main class="pagina pagina2" id="pgBolletta" style="display:none">
+  <section class="blocco">
+    <h2 class="sez">Carica bolletta</h2>
+    <p style="font-size:14px">Qui arriverà il caricamento della <b>bolletta di dettaglio</b> (PDF):
+    un secondo prompt di estrazione nel Worker la trasformerà in dati strutturati e lo stesso
+    motore di calcolo la confronterà voce per voce con le offerte caricate.</p>
+    <div class="nota" style="margin-top:8px">Funzione in roadmap (sezione 2) — non ancora attiva
+    in questo sprint.</div>
+    <div class="barraBott"><button class="bott" disabled>📄 Carica bolletta (presto)</button></div>
+  </section>
+</main>
+
+<main class="pagina pagina2" id="pgBenchmark" style="display:none">
+  <section class="blocco">
+    <h2 class="sez">Benchmark di riferimento</h2>
+    <p style="font-size:14px">Scegli il riferimento del confronto: è la colonna di destra del
+    Dettaglio scontrino e il termine del "Δ vs benchmark" nel riquadro della migliore.
+    Non è più uno switch fisso: puoi confrontare contro il servizio regolato o contro
+    una qualunque delle tue offerte (es. il tuo contratto attuale).</p>
+    <label>Riferimento</label>
+    <select id="selBenchmark" style="max-width:420px"></select>
+    <div class="nota" id="notaBenchmark"></div>
+  </section>
+</main>
+
+<main class="pagina pagina2" id="pgFonti" style="display:none">
+  <section class="blocco">
+    <h2 class="sez">Fonti ARERA e dati</h2>
+    <div id="fontiBox"><div class="nota">Carico FONTI.md…</div></div>
+  </section>
+</main>
+
+<main class="pagina pagina2" id="pgEstrazione" style="display:none">
+  <section class="blocco">
+    <h2 class="sez">Configurazione estrazione CTE (Worker)</h2>
+    <div id="detWorker">
+      
+      <div class="rigaSwitch">
+        <label class="switch" style="margin:0"><input type="checkbox" id="swWorker">
+          <span class="slider"></span></label>
+        <span>Estrazione CTE <b id="swStato">disattivata</b></span>
+      </div>
+      <div class="nota">Default OFF: nessuna chiamata (e nessun costo) parte finché non la attivi.
+        URL e passphrase restano salvati.</div>
+      <label>Modello di estrazione</label>
+      <div class="segment" id="segModello">
+        <button data-m="haiku">Economico (Haiku)</button>
+        <button data-m="sonnet" class="attivo">Preciso (Sonnet)</button>
+      </div>
+      <div class="nota">Haiku è più economico (~1/3 del costo), Sonnet più accurato su offerte complesse.</div>
+      <label>Worker URL</label>
+      <input type="text" id="setWorkerUrl" placeholder="https://luce-check-extract.xxx.workers.dev">
+      <label>Passphrase (X-Luce-Check-Key)</label>
+      <input type="text" id="setWorkerKey" placeholder="passphrase condivisa">
+      <div class="barraBott"><button class="bott sec mini" id="btSalvaWorker">Salva impostazioni</button></div>
+      <div class="nota">Salvate solo in questo browser (localStorage), mai nel codice sorgente.</div>
+    </div>
+  </section>
+</main>
+
+
+<dialog id="dlgCte">
+  <h3>Incolla il testo della CTE</h3>
+  <p class="nota">Estrazione euristica: verifica sempre i campi pre-compilati prima di salvare.</p>
+  <textarea id="testoCte" rows="10" style="margin-top:8px"
+    placeholder="Incolla qui il testo copiato dal PDF della CTE…"></textarea>
+  <div class="barraBott">
+    <button class="bott" id="btAnalizza">Analizza e pre-compila</button>
+    <button class="bott sec" id="btChiudiDlg">Chiudi</button>
+  </div>
+  <div class="nota" id="esitoParse"></div>
+</dialog>
+
+<footer>
+  Valori ARERA da <span class="mono">config_tariffe.json</span> · PUN GME da
+  <span class="mono">dati/pun.json</span> · Offerte in localStorage (schema v2, con
+  <span class="mono">schemaVersion</span>). Perdite applicate alla sola componente energia;
+  rete, oneri e accise sui kWh misurati; IVA 10% sull'imponibile netto sconti pre-IVA;
+  bonus una tantum come credito post-IVA rateizzato sulla durata.
+</footer>
+
+<script>
+"use strict";
+(function(){try{const t=localStorage.getItem("luceCheck.tema");
+  document.documentElement.dataset.tema=(t==="dark"||t==="light")?t:
+    (matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");}catch(e){}})();
+/* ================= FALLBACK EMBED ================= */
+const CONFIG_FALLBACK={meta:{versione:"2026-Q3",validoDal:"2026-07-01",validoAl:"2026-09-30",
+  fonte:"ARERA del. 219/2026, 227/2026, 575/2025 (fallback embed)"},
+ rete:{quotaFissa_eur_mese:1.92,quotaPotenza_eur_kW_mese:1.9766,quotaEnergia_eur_kWh:0.01473},
+ oneriSistema:{quotaEnergia_eur_kWh:0.033153,quotaFissaNonResidente_eur_anno:95.09},
+ stg:{parametroGamma_eur_pod_anno:-72.65,dispacciamento_eur_kWh:0.013,
+   dispacciamentoPerditeIncluse:true,cpstgd_eur_kWh:0,perditeRete:0.102},
+ maggiorTutelaVulnerabili:{quotaFissaVendita_eur_mese:0,ped_eur_kWh:0,
+   pedF1_eur_kWh:0,pedF23_eur_kWh:0},
+ imposte:{accisa_eur_kWh:0.0227,
+   esenzioneResidente:{kWhMese:150,potenzaMax_kW:3,sogliaRecupero_kWhMese:220},iva:0.10}};
+const PUN_FALLBACK={meta:{fonte:"fallback embed",ultimoAggiornamento:"2026-07-11"},
+ mesi:{"2026-05":{F0:0.111,F1:0.118,F2:0.114,F3:0.101}}};
+
+/* ================= VOCABOLARIO (enum chiusi, §4) ================= */
+const ENUMS={
+  tipoPrezzo:["fisso","indicizzato"],
+  indice:["—","PUN","PUN Index GME"],
+  scontoTipo:["—","perc_prezzo","eur_anno","eur_mese","bonus_unatantum"],
+  scontoCond:["—","domiciliazione","domiciliazione+eBill","dual_gas","telefonia_1mobile"]
+};
+const CONDIZIONI={
+  "—":()=>true,
+  "domiciliazione":ctx=>!!ctx.domiciliazione,
+  "domiciliazione+eBill":ctx=>!!ctx.domiciliazione&&!!ctx.bollettaElettronica,
+  "dual_gas":ctx=>!!ctx.gasAttivo,
+  "telefonia_1mobile":ctx=>!!ctx.sim1Mobile
+};
+const CONDIZIONI_LABEL={"domiciliazione":"domiciliazione",
+  "domiciliazione+eBill":"domiciliazione + eBill","dual_gas":"gas dello stesso venditore",
+  "telefonia_1mobile":"SIM 1Mobile"};
+const REQ_VALORI=["domiciliazione","domiciliazione+eBill","dual_gas","telefonia_1mobile"];
+/* requisiti obbligatori NON soddisfatti dal contesto: se non vuoto,
+   l'offerta non e' sottoscrivibile (esclusa dalla scelta della migliore) */
+function requisitiMancanti(off,ctx){
+  if(!off||!Array.isArray(off.requisitoObbligatorio))return[];
+  return off.requisitoObbligatorio.filter(r=>!(CONDIZIONI[r]||(()=>false))(ctx||{}));
+}
+
+/* ================= VALIDAZIONE (§8) ================= */
+function validaOfferta(o){
+  const errori=[];
+  const num=v=>typeof v==="number"&&isFinite(v);
+  if(!o||typeof o!=="object")return{ok:false,errori:["record non valido"]};
+  if(!o.nome)errori.push("nome mancante");
+  if(!ENUMS.tipoPrezzo.includes(o.tipoPrezzo))
+    errori.push(`tipoPrezzo="${o.tipoPrezzo}" non ammesso`);
+  if(!ENUMS.indice.includes(o.indice))errori.push(`indice="${o.indice}" non ammesso`);
+  if(o.tipoPrezzo==="indicizzato"&&o.indice==="—")
+    errori.push("offerta indicizzata senza indice");
+  if(!ENUMS.scontoTipo.includes(o.scontoTipo))
+    errori.push(`scontoTipo="${o.scontoTipo}" non ammesso`);
+  if(!ENUMS.scontoCond.includes(o.scontoCond))
+    errori.push(`scontoCond="${o.scontoCond}" non ammesso`);
+  for(const c of["p0","pF1","pF2","pF3","perdite","quotaFissa","scontoValore"])
+    if(!num(o[c]))errori.push(`${c} non numerico`);
+  if(o.prezzoMax!=null&&!num(o.prezzoMax))errori.push("prezzoMax non numerico");
+  if(o.scontoTipo==="perc_prezzo"&&!(o.scontoValore>=0&&o.scontoValore<1))
+    errori.push("perc_prezzo richiede scontoValore in [0,1)");
+  if(o.scadenza&&!/^\d{4}-\d{2}-\d{2}$/.test(o.scadenza))
+    errori.push(`scadenza "${o.scadenza}" non in formato YYYY-MM-DD`);
+  if(![12,24].includes(+o.durataMesi))errori.push(`durataMesi=${o.durataMesi} non ammesso (12|24)`);
+  if(o.requisitoObbligatorio!=null){
+    if(!Array.isArray(o.requisitoObbligatorio))
+      errori.push("requisitoObbligatorio deve essere array o null");
+    else for(const r of o.requisitoObbligatorio)
+      if(!REQ_VALORI.includes(r))
+        errori.push(`requisitoObbligatorio "${r}" non ammesso`);
+  }
+  if(Array.isArray(o.extra))for(const[i,s]of o.extra.entries()){
+    if(!ENUMS.scontoTipo.includes(s.scontoTipo))errori.push(`extra[${i}].scontoTipo non ammesso`);
+    if(!ENUMS.scontoCond.includes(s.scontoCond))errori.push(`extra[${i}].scontoCond non ammesso`);
+    if(!num(s.scontoValore))errori.push(`extra[${i}].scontoValore non numerico`);
+  }else if(o.extra!=null)errori.push("extra deve essere array o null");
+  return{ok:errori.length===0,errori};
+}
+
+/* ================= MIGRAZIONE v1 -> v2 (§7) ================= */
+function migraV1(o){
+  const n={schemaVersion:2,
+    id:o.id||("mig-"+Math.random().toString(36).slice(2,8)),
+    nome:o.nome||"",fornitore:o.fornitore||"",
+    tipoPrezzo:ENUMS.tipoPrezzo.includes(o.tipoPrezzo)?o.tipoPrezzo:"fisso",
+    indice:o.indice&&ENUMS.indice.includes(o.indice)?o.indice
+      :(o.tipoPrezzo==="indicizzato"?"PUN":"—"),
+    durataMesi:+o.durataMesi===24?24:12,
+    scadenza:o.scadenza||null,
+    biorariaDisp:!!(o.biorariaDisp??o.perFasce),
+    p0:+o.p0||0,pF1:+o.pF1||0,pF2:+o.pF2||0,pF3:+o.pF3||0,
+    prezzoConPerdite:!!o.prezzoConPerdite,perdite:+o.perdite||0.10,
+    prezzoMax:o.prezzoMax!=null&&o.prezzoMax!==""?+o.prezzoMax:null,
+    quotaFissa:+o.quotaFissa||0,dispIncluso:!!o.dispIncluso,
+    scontoTipo:ENUMS.scontoTipo.includes(o.scontoTipo)?o.scontoTipo:"—",
+    scontoValore:+o.scontoValore||0,
+    scontoCond:ENUMS.scontoCond.includes(o.scontoCond)?o.scontoCond:"—",
+    scontoSuLuce:o.scontoSuLuce!=null?!!o.scontoSuLuce:false,
+    extra:Array.isArray(o.extra)?o.extra:null,
+    requisitoObbligatorio:Array.isArray(o.requisitoObbligatorio)
+      ?o.requisitoObbligatorio.filter(r=>REQ_VALORI.includes(r)):[],
+    note:o.note||""};
+  // vecchio campo `sconto` numerico -> eur_anno
+  if(n.scontoTipo==="—"&&+o.sconto>0){
+    n.scontoTipo="eur_anno";n.scontoValore=+o.sconto;
+    n.scontoCond="—";n.scontoSuLuce=true;}
+  // `altriVar` -> ignorato (deprecato)
+  return n;
+}
+
+/* ================= CalcEngine (esteso §5, resto invariato) ================= */
+const CalcEngine={
+  normalizzaConsumi(input){
+    const molt=input.periodo==="mensile"?12:1;
+    let fasce;
+    if(input.multiorario)
+      fasce={F1:(input.kWh.F1||0)*molt,F2:(input.kWh.F2||0)*molt,F3:(input.kWh.F3||0)*molt};
+    else fasce={F0:(input.kWh.F0||0)*molt};
+    const totale=Object.values(fasce).reduce((a,b)=>a+b,0);
+    return{fasce,totale,mensile:totale/12};
+  },
+  /* §5.1: prezzo unitario LORDO perdite per fascia, con cap */
+  _prezzoUnitLordo(off,f,pun){
+    const pX=f==="F0"?off.p0
+      :(off.biorariaDisp?{F1:off.pF1,F2:off.pF2,F3:off.pF3}[f]:off.p0);
+    const base=off.tipoPrezzo==="fisso"?pX:(pun[f]??pun.F0)+pX;
+    let lordo=off.prezzoConPerdite?base:base*(1+off.perdite);
+    if(off.prezzoMax!=null)lordo=Math.min(lordo,off.prezzoMax);   // cap comprensivo perdite
+    return lordo;
+  },
+  /* §5.2 */
+  materiaMercatoLibero(consumi,off,pun){
+    let energiaConsumo=0;const dettaglioFasce={};
+    for(const[f,kwh]of Object.entries(consumi.fasce)){
+      const prezzo=this._prezzoUnitLordo(off,f,pun);
+      const voce=prezzo*kwh;
+      dettaglioFasce[f]={prezzo,kwh,importo:voce};energiaConsumo+=voce;
+    }
+    return{quotaFissa:off.quotaFissa,energia:energiaConsumo,
+      totale:off.quotaFissa+energiaConsumo,dettaglioFasce};
+  },
+  materiaSTG(consumi,cfgStg,pun){
+    let energia=0;const dettaglioFasce={};
+    for(const[f,kwh]of Object.entries(consumi.fasce)){
+      const prezzo=(pun[f]??pun.F0)*(1+cfgStg.perditeRete);
+      const voce=prezzo*kwh;dettaglioFasce[f]={prezzo,kwh,importo:voce};energia+=voce;
+    }
+    energia+=cfgStg.cpstgd_eur_kWh*consumi.totale;
+    return{quotaFissa:cfgStg.parametroGamma_eur_pod_anno,energia,
+      totale:cfgStg.parametroGamma_eur_pod_anno+energia,dettaglioFasce};
+  },
+  /* §5.3: sconti con condizioni; ordine pre/post IVA */
+  sconti(off,ctx,energiaConsumo){
+    const out={preIVA:0,postIVA:0,attivi:[],ignorati:[]};
+    if(!off)return out;
+    const lista=[];
+    if(off.scontoTipo&&off.scontoTipo!=="—")
+      lista.push({scontoTipo:off.scontoTipo,scontoValore:off.scontoValore,
+        scontoCond:off.scontoCond||"—",scontoSuLuce:!!off.scontoSuLuce});
+    if(Array.isArray(off.extra))for(const s of off.extra)
+      if(s.scontoTipo&&s.scontoTipo!=="—")lista.push(s);
+    for(const s of lista){
+      let valore=0,fase="pre";
+      switch(s.scontoTipo){
+        case"perc_prezzo":valore=s.scontoValore*energiaConsumo;break;
+        case"eur_anno":valore=s.scontoValore;break;
+        case"eur_mese":valore=s.scontoValore*12;break;
+        case"bonus_unatantum":
+          valore=s.scontoValore*12/(off.durataMesi||12);fase="post";break;
+      }
+      if(!s.scontoSuLuce){
+        out.ignorati.push({...s,valore,motivo:"applicato ad altra fornitura (non luce)"});
+        continue;}
+      const condOk=(CONDIZIONI[s.scontoCond]||(()=>false))(ctx||{});
+      if(!condOk){
+        out.ignorati.push({...s,valore,
+          motivo:"richiede "+(CONDIZIONI_LABEL[s.scontoCond]||s.scontoCond)});
+        continue;}
+      out.attivi.push({...s,valore,fase});
+      if(fase==="pre")out.preIVA+=valore;else out.postIVA+=valore;
+    }
+    return out;
+  },
+  materiaMTV(consumi,cfgMtv){
+    const qf=(cfgMtv.quotaFissaVendita_eur_mese||0)*12;
+    let energia=0;const dettaglioFasce={};
+    for(const[f,kwh]of Object.entries(consumi.fasce)){
+      const prezzo=f==="F1"?(cfgMtv.pedF1_eur_kWh||cfgMtv.ped_eur_kWh)
+        :f==="F0"?cfgMtv.ped_eur_kWh
+        :(cfgMtv.pedF23_eur_kWh||cfgMtv.ped_eur_kWh);
+      const voce=prezzo*kwh;dettaglioFasce[f]={prezzo,kwh,importo:voce};energia+=voce;
+    }
+    return{quotaFissa:qf,energia,sconto:0,totale:qf+energia,dettaglioFasce};
+  },
+  dispacciamento(consumi,cfgStg,off){
+    if(off&&off.dispIncluso)return 0;
+    const kwh=cfgStg.dispacciamentoPerditeIncluse?consumi.totale
+      :consumi.totale*(1+cfgStg.perditeRete);
+    return cfgStg.dispacciamento_eur_kWh*kwh;
+  },
+  rete(consumi,potenzaKw,cfgRete){
+    const quotaFissa=cfgRete.quotaFissa_eur_mese*12;
+    const quotaPotenza=cfgRete.quotaPotenza_eur_kW_mese*potenzaKw*12;
+    const quotaEnergia=cfgRete.quotaEnergia_eur_kWh*consumi.totale;
+    return{quotaFissa,quotaPotenza,quotaEnergia,
+      totale:quotaFissa+quotaPotenza+quotaEnergia};
+  },
+  oneri(consumi,residente,cfgOneri){
+    const quotaFissa=residente?0:cfgOneri.quotaFissaNonResidente_eur_anno;
+    const quotaEnergia=cfgOneri.quotaEnergia_eur_kWh*consumi.totale;
+    return{quotaFissa,quotaEnergia,totale:quotaFissa+quotaEnergia};
+  },
+  accisa(consumi,residente,potenzaKw,cfgImposte){
+    const cm=consumi.mensile,ag=cfgImposte.esenzioneResidente;let imp;
+    if(residente&&potenzaKw<=ag.potenzaMax_kW){
+      if(cm<=ag.kWhMese)imp=0;
+      else if(cm<=ag.sogliaRecupero_kWhMese)imp=cm-ag.kWhMese;
+      else{const er=Math.max(0,ag.kWhMese-(cm-ag.sogliaRecupero_kWhMese));imp=cm-er;}
+    }else imp=cm;
+    return imp*cfgImposte.accisa_eur_kWh*12;
+  },
+  bolletta(tipo,input,off,config,pun){
+    const consumi=this.normalizzaConsumi(input);
+    const materia=tipo==="ml"?this.materiaMercatoLibero(consumi,off,pun)
+      :tipo==="mtv"?this.materiaMTV(consumi,config.maggiorTutelaVulnerabili||{})
+      :this.materiaSTG(consumi,config.stg,pun);
+    const sconti=tipo==="ml"?this.sconti(off,input.ctx,materia.energia)
+      :{preIVA:0,postIVA:0,attivi:[],ignorati:[]};
+    const disp=tipo==="mtv"?0   // PED gia' comprensivo di dispacciamento
+      :this.dispacciamento(consumi,config.stg,tipo==="ml"?off:null);
+    const rete=this.rete(consumi,input.potenzaKw,config.rete);
+    const oneri=this.oneri(consumi,input.residente,config.oneriSistema);
+    const accisa=this.accisa(consumi,input.residente,input.potenzaKw,config.imposte);
+    const imponibile=(materia.totale-sconti.preIVA)+disp+rete.totale+oneri.totale+accisa;
+    const iva=imponibile*config.imposte.iva;
+    const totale=imponibile+iva-sconti.postIVA;
+    const quadraturaOk=Math.abs(totale-((materia.totale-sconti.preIVA)+disp+rete.totale
+      +oneri.totale+accisa+iva-sconti.postIVA))<1e-9;
+    return{consumi,materia,sconti,dispacciamento:disp,rete,oneri,accisa,iva,
+      imponibile,totale,quadraturaOk};
+  }
+};
+
+/* ================= Scadenze ================= */
+function statoScadenza(off,oggi){
+  if(!off||!off.scadenza)return{stato:"nessuna",label:""};
+  const t=oggi||new Date().toISOString().slice(0,10);
+  if(t>off.scadenza)return{stato:"scaduta",label:"SCADUTA"};
+  const gg=Math.round((new Date(off.scadenza)-new Date(t))/86400000);
+  if(gg<=30)return{stato:"inScadenza",label:`scade tra ${gg} gg`};
+  return{stato:"ok",label:"fino al "+off.scadenza.split("-").reverse().join("/")};
+}
+
+/* ================= Parser CTE (euristico) ================= */
+const CteParser={
+  _num(s){const p=String(s).trim();
+    return p.includes(",")?parseFloat(p.replace(/\./g,"").replace(",","."))
+      :parseFloat(p);},
+  analizza(testo){
+    const t=testo.replace(/\s+/g," ");const out={trovati:[]};let m;
+    if(m=t.match(/PUN(?:\s*Index\s*GME)?\s*(?:mensile)?\s*\+\s*([\d.,]+)\s*(?:€|euro)?\s*\/?\s*kWh/i)){
+      out.tipoPrezzo="indicizzato";
+      out.indice=/Index\s*GME/i.test(m[0])?"PUN Index GME":"PUN";
+      out.p0=this._num(m[1]);out.trovati.push("spread "+out.p0+" su "+out.indice);
+    }else if(m=t.match(/prezzo\s+(?:fisso|bloccato)[^\d]{0,60}?([\d.,]+)\s*(?:€|euro)\s*\/?\s*kWh/i)){
+      out.tipoPrezzo="fisso";out.indice="—";out.p0=this._num(m[1]);
+      out.trovati.push("prezzo fisso "+out.p0);
+    }
+    if(m=t.match(/(?:tetto|cap|prezzo\s+massimo)[^\d]{0,40}([\d.,]+)\s*(?:€|euro)\s*\/?\s*kWh/i)){
+      out.prezzoMax=this._num(m[1]);out.trovati.push("tetto "+out.prezzoMax);}
+    if(m=t.match(/([\d.,]+)\s*(?:€|euro)\s*\/?\s*(?:POD)?\s*\/?\s*anno/i)){
+      out.quotaFissa=this._num(m[1]);out.trovati.push("QF "+out.quotaFissa+" €/anno");
+    }else if(m=t.match(/([\d.,]+)\s*(?:€|euro)\s*\/?\s*(?:POD|PdP)?\s*\/?\s*mese/i)){
+      out.quotaFissa=+(this._num(m[1])*12).toFixed(2);
+      out.trovati.push("QF "+out.quotaFissa+" €/anno (da €/mese ×12)");}
+    if(/comprensiv\w+\s+(?:delle\s+)?perdite/i.test(t)){
+      out.prezzoConPerdite=true;out.trovati.push("prezzo comprensivo di perdite");}
+    if(m=t.match(/perdite(?:\s+di\s+rete)?[^%\d]{0,40}([\d.,]+)\s*%/i)){
+      out.perdite=this._num(m[1]);out.trovati.push("perdite "+out.perdite+"%");}
+    if(m=t.match(/(?:sottoscrivibile|valid[ao]|attivabile)\s*(?:fino\s+al|entro\s+il)\s*(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/i)){
+      let g=m[1],me=m[2],a=m[3];if(a.length===2)a="20"+a;
+      out.scadenza=`${a}-${me.padStart(2,"0")}-${g.padStart(2,"0")}`;
+      out.trovati.push("scadenza "+out.scadenza);}
+    if(/durata[^.]{0,30}24\s*mesi|24\s*mesi/i.test(t)){out.durataMesi=24;out.trovati.push("durata 24 mesi");}
+    if(/dispacciamento[^.]{0,80}(?:inclus|compres)/i.test(t)){
+      out.dispIncluso=true;out.trovati.push("dispacciamento incluso");}
+    return out;
+  }
+};
+
+/* ================= OfferStore (localStorage) ================= */
+const OfferStore={
+  K:"luceCheck.offerte.v2",K_OLD:"luceCheck.offerte.v1",
+  carica(){
+    try{
+      const v2=JSON.parse(localStorage.getItem(this.K));
+      if(Array.isArray(v2)&&v2.length)return v2;
+      const v1=JSON.parse(localStorage.getItem(this.K_OLD));
+      if(Array.isArray(v1)&&v1.length){
+        const mig=v1.map(migraV1).filter(o=>validaOfferta(o).ok);
+        this.salva(mig);return mig;}
+      return[];
+    }catch(e){return[];}
+  },
+  salva(off){try{localStorage.setItem(this.K,JSON.stringify(off));}catch(e){}}
+};
+
+/* ================= SEED (8 offerte, §9) ================= */
+const SEED=[
+ {"schemaVersion":2,"id":"1mob-casaflex","nome":"CASA FLEX","fornitore":"1Mobile (SG Energia)",
+  "tipoPrezzo":"indicizzato","indice":"PUN","durataMesi":12,"scadenza":"2026-05-31",
+  "biorariaDisp":false,"p0":0.01991,"pF1":0,"pF2":0,"pF3":0,"prezzoConPerdite":false,"perdite":0.10,
+  "prezzoMax":null,"quotaFissa":207.6,"dispIncluso":false,"scontoTipo":"eur_mese","scontoValore":11,
+  "scontoCond":"telefonia_1mobile","scontoSuLuce":true,"extra":null,
+  "note":"Spread su PUN. Sconto 11 €/PdP/mese solo con SIM 1Mobile attiva; revocabile alla disdetta. Sottoscrivibile 01-31/05/2026."},
+ {"schemaVersion":2,"id":"enel-move","nome":"ENEL MOVE LUCE","fornitore":"Enel Energia",
+  "tipoPrezzo":"fisso","indice":"—","durataMesi":24,"scadenza":"2026-07-28",
+  "biorariaDisp":false,"p0":0.179,"pF1":0,"pF2":0,"pF3":0,"prezzoConPerdite":true,"perdite":0.10,
+  "prezzoMax":null,"quotaFissa":168,"dispIncluso":false,"scontoTipo":"bonus_unatantum","scontoValore":60,
+  "scontoCond":"dual_gas","scontoSuLuce":true,"extra":null,
+  "note":"Prezzo comprensivo perdite. Bonus Dual 60 €/fornitura solo con Enel Move Gas (4 rate da 15 € in 2 anni). Include Enel Move Plus Luce (assistenza) gratis 36 mesi. 100% rinnovabile."},
+ {"schemaVersion":2,"id":"enel-flex-control","nome":"ENEL FLEX CONTROL LUCE","fornitore":"Enel Energia",
+  "tipoPrezzo":"indicizzato","indice":"PUN Index GME","durataMesi":12,"scadenza":"2026-07-28",
+  "biorariaDisp":false,"p0":0.02226,"pF1":0,"pF2":0,"pF3":0,"prezzoConPerdite":true,"perdite":0.10,
+  "prezzoMax":0.174,"quotaFissa":180,"dispIncluso":false,"scontoTipo":"—","scontoValore":0,
+  "scontoCond":"—","scontoSuLuce":false,"extra":null,
+  "note":"α inclusivo perdite. Tetto Prezzo Luce 0,174 €/kWh per 12 mesi. 100% rinnovabile."},
+ {"schemaVersion":2,"id":"plen-fixa24-smart","nome":"FIXA TIME 24 SMART","fornitore":"Plenitude",
+  "tipoPrezzo":"fisso","indice":"—","durataMesi":24,"scadenza":"2026-07-12",
+  "biorariaDisp":true,"p0":0.09,"pF1":0.0925,"pF2":0.0885,"pF3":0.0885,"prezzoConPerdite":false,"perdite":0.10,
+  "prezzoMax":null,"quotaFissa":144,"dispIncluso":false,"scontoTipo":"perc_prezzo","scontoValore":0.05,
+  "scontoCond":"domiciliazione","scontoSuLuce":true,"extra":null,
+  "note":"Prezzi netto-perdite. Bioraria F2=F3=F23. Sconto 5% su Corrispettivo Luce con domiciliazione SEPA. Una-tantum 35 € su attivazione/voltura con cambio fornitore. 100% rinnovabile."},
+ {"schemaVersion":2,"id":"plen-fixa24-base","nome":"FIXA TIME 24","fornitore":"Plenitude",
+  "tipoPrezzo":"fisso","indice":"—","durataMesi":24,"scadenza":"2026-07-12",
+  "biorariaDisp":true,"p0":0.10,"pF1":0.1028,"pF2":0.0984,"pF3":0.0984,"prezzoConPerdite":false,"perdite":0.10,
+  "prezzoMax":null,"quotaFissa":144,"dispIncluso":false,"scontoTipo":"perc_prezzo","scontoValore":0.05,
+  "scontoCond":"domiciliazione","scontoSuLuce":true,"extra":null,
+  "note":"Versione BASE. Prezzi netto-perdite. Sconto 5% su Corrispettivo Luce con domiciliazione. Una-tantum 35 €. 100% rinnovabile."},
+ {"schemaVersion":2,"id":"plen-fixatime-12","nome":"FIXA TIME","fornitore":"Plenitude",
+  "tipoPrezzo":"fisso","indice":"—","durataMesi":12,"scadenza":"2026-07-12",
+  "biorariaDisp":true,"p0":0.12,"pF1":0.1217,"pF2":0.119,"pF3":0.119,"prezzoConPerdite":false,"perdite":0.10,
+  "prezzoMax":null,"quotaFissa":144,"dispIncluso":false,"scontoTipo":"perc_prezzo","scontoValore":0.05,
+  "scontoCond":"domiciliazione","scontoSuLuce":true,"extra":null,
+  "note":"Versione 12 mesi BASE. Prezzi netto-perdite. Sconto 5% con domiciliazione. Una-tantum 35 €. 100% rinnovabile."},
+ {"schemaVersion":2,"id":"plen-trend-casa","nome":"TREND CASA","fornitore":"Plenitude",
+  "tipoPrezzo":"indicizzato","indice":"PUN Index GME","durataMesi":24,"scadenza":"2026-07-12",
+  "biorariaDisp":false,"p0":0.02,"pF1":0,"pF2":0,"pF3":0,"prezzoConPerdite":false,"perdite":0.10,
+  "prezzoMax":null,"quotaFissa":144,"dispIncluso":false,"scontoTipo":"eur_anno","scontoValore":12,
+  "scontoCond":"domiciliazione","scontoSuLuce":false,"extra":null,
+  "note":"Contributo al Consumo netto-perdite 0,02 €/kWh. ATTENZIONE: sconto domiciliazione 12 €/anno applicato alla quota fissa GAS, non alla luce (scontoSuLuce=false). 100% rinnovabile."},
+ {"schemaVersion":2,"id":"plen-placet-fissa","nome":"PLACET FISSA LUCE","fornitore":"Plenitude",
+  "tipoPrezzo":"fisso","indice":"—","durataMesi":12,"scadenza":"2026-07-12",
+  "biorariaDisp":true,"p0":0.264,"pF1":0.2653,"pF2":0.2632,"pF3":0.2632,"prezzoConPerdite":false,"perdite":0.10,
+  "prezzoMax":null,"quotaFissa":144,"dispIncluso":false,"scontoTipo":"eur_anno","scontoValore":6,
+  "scontoCond":"domiciliazione+eBill","scontoSuLuce":true,"extra":null,
+  "note":"Solo luce. La CTE non dichiara esplicitamente 'netto perdite' -> incertezza sul basis (~80%). Sconto 6 €/anno con SEPA + bolletta elettronica. Voltura 23 €."}
+];
+
+/* ================= XLSX v2 (§7) ================= */
+const XLSX_COLONNE=["id","nome","fornitore","tipoPrezzo","indice","durataMesi","scadenza",
+  "biorariaDisp","p0","pF1","pF2","pF3","prezzoConPerdite","perdite","prezzoMax","quotaFissa",
+  "dispIncluso","scontoTipo","scontoValore","scontoCond","scontoSuLuce",
+  "requisitoObbligatorio","note"];
+function esportaXlsx(offerte){
+  const righe=offerte.map(o=>{
+    const r={};
+    for(const c of XLSX_COLONNE){
+      let v=o[c];
+      if(typeof v==="boolean")v=v?"TRUE":"FALSE";
+      if(Array.isArray(v))v=v.join("|");
+      if(v==null)v="";
+      r[c]=v;
+    }
+    return r;
+  });
+  const ws=XLSX.utils.json_to_sheet(righe,{header:XLSX_COLONNE});
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Offerte");
+  XLSX.writeFile(wb,"offerte_luce_check_v2.xlsx");
+}
+function importaXlsx(file,doneCb){
+  const fr=new FileReader();
+  fr.onload=()=>{
+    try{
+      const wb=XLSX.read(fr.result,{type:"array"});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const righe=XLSX.utils.sheet_to_json(ws,{defval:""});
+      doneCb(righe.map(normalizzaRecordImport));
+    }catch(e){alert("File XLSX non leggibile: "+e.message);}
+  };
+  fr.readAsArrayBuffer(file);
+}
+function normalizzaRecordImport(r){
+  const b=v=>v===true||String(v).trim().toUpperCase()==="TRUE"||String(v).trim()==="1";
+  const n=v=>{if(v===""||v==null)return 0;
+    const x=typeof v==="number"?v:parseFloat(String(v).replace(",","."));
+    return isFinite(x)?x:NaN;};
+  const s=v=>String(v??"").trim();
+  let scad=s(r.scadenza)||null;
+  if(scad&&/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(scad)){       // formato it -> ISO
+    const[g,m,a]=scad.split("/");scad=`${a}-${m.padStart(2,"0")}-${g.padStart(2,"0")}`;}
+  const o={schemaVersion:2,
+    id:s(r.id)||("imp-"+Math.random().toString(36).slice(2,8)),
+    nome:s(r.nome),fornitore:s(r.fornitore),
+    tipoPrezzo:s(r.tipoPrezzo)||"fisso",
+    indice:s(r.indice)||"—",
+    durataMesi:(r.durataMesi===""||r.durataMesi==null)?12:+r.durataMesi,
+    scadenza:scad,
+    biorariaDisp:b(r.biorariaDisp??r.perFasce),           // retrocompat v1
+    p0:n(r.p0),pF1:n(r.pF1),pF2:n(r.pF2),pF3:n(r.pF3),
+    prezzoConPerdite:b(r.prezzoConPerdite),perdite:n(r.perdite)||0.10,
+    prezzoMax:(r.prezzoMax===""||r.prezzoMax==null)?null:n(r.prezzoMax),
+    quotaFissa:n(r.quotaFissa),dispIncluso:b(r.dispIncluso),
+    scontoTipo:s(r.scontoTipo)||"—",scontoValore:n(r.scontoValore),
+    scontoCond:s(r.scontoCond)||"—",
+    scontoSuLuce:r.scontoSuLuce===""?false:b(r.scontoSuLuce),
+    requisitoObbligatorio:s(r.requisitoObbligatorio)
+      ?s(r.requisitoObbligatorio).split("|").map(x=>x.trim())
+        .filter(x=>REQ_VALORI.includes(x)):[],
+    extra:null,note:s(r.note)};
+  if(o.tipoPrezzo==="indicizzato"&&o.indice==="—")o.indice="PUN"; // default retrocompat
+  if(o.scontoTipo==="—"&&n(r.sconto)>0){                  // retrocompat v1 `sconto`
+    o.scontoTipo="eur_anno";o.scontoValore=n(r.sconto);
+    o.scontoCond="—";o.scontoSuLuce=true;}
+  return o;
+}
+/* import con validazione + quarantena (§8) */
+function importaConQuarantena(records){
+  const importate=[],quarantena=[];
+  for(const o of records){
+    const v=validaOfferta(o);
+    if(v.ok)importate.push(o);
+    else quarantena.push({nome:o&&o.nome||"(senza nome)",errori:v.errori});
+  }
+  for(const o of importate){
+    const i=offerte.findIndex(x=>x.id===o.id);
+    if(i>=0)offerte[i]=o;else offerte.push(o);
+  }
+  OfferStore.salva(offerte);
+  let msg=`${importate.length} importate, ${quarantena.length} in quarantena.`;
+  if(quarantena.length)
+    msg+="\n\nScartate:\n"+quarantena.map(q=>`• "${q.nome}": ${q.errori.join("; ")}`).join("\n");
+  alert(msg);
+  aggiorna();
+}
+
+/* ================= Override tariffe (config.html, brief config ARERA) ================= */
+/* Deep merge: l'override vince sul valore shippato, foglia per foglia. */
+function deepMerge(base,override){
+  if(override==null||typeof override!=="object"||Array.isArray(override))
+    return override!==undefined?override:base;
+  const out=Array.isArray(base)?base.slice():{...(base||{})};
+  for(const k of Object.keys(override)){
+    if(override[k]!=null&&typeof override[k]==="object"&&!Array.isArray(override[k])
+       &&base&&typeof base[k]==="object"&&!Array.isArray(base[k]))
+      out[k]=deepMerge(base[k],override[k]);
+    else out[k]=override[k];
+  }
+  return out;
+}
+function leggiTariffOverride(){
+  try{const o=JSON.parse(localStorage.getItem("TariffOverride_v1"));
+    return(o&&typeof o==="object")?o:null;}catch(e){return null;}
+}
+
+/* ================= Stato & UI ================= */
+const $=id=>document.getElementById(id);
+let stato={periodo:"annuale",fasce:"mono",editId:null,tortaId:null};
+let offerte=[];let grafico=null;
+const eur=v=>v.toLocaleString("it-IT",{style:"currency",currency:"EUR"});
+const nid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+function leggiInput(){
+  return{periodo:stato.periodo,multiorario:stato.fasce==="multi",
+    kWh:stato.fasce==="multi"
+      ?{F1:+$("kF1").value,F2:+$("kF2").value,F3:+$("kF3").value}
+      :{F0:+$("kF0").value},
+    potenzaKw:+$("potenza").value,residente:$("residente").value==="1",
+    ctx:{domiciliazione:$("cxDom").checked,bollettaElettronica:$("cxEbill").checked,
+      gasAttivo:$("cxGas").checked,sim1Mobile:$("cxSim").checked}};
+}
+function leggiPun(){
+  if($("punManuale").checked){
+    const f0=+$("punF0").value;
+    return stato.fasce==="multi"
+      ?{F0:f0,F1:+$("punF1").value,F2:+$("punF2").value,F3:+$("punF3").value}:{F0:f0};
+  }
+  return TariffManager.punDelMese($("mesePun").value)||{F0:0.115};
+}
+
+/* ================= TariffManager ================= */
+const TariffManager={
+  config:null,pun:null,avvisi:[],
+  async carica(){
+    this.config=await this._fetchJson("config_tariffe.json",CONFIG_FALLBACK,
+      "config_tariffe.json non raggiungibile: uso i valori integrati (2026-Q3).");
+    const override=leggiTariffOverride();          // overlay da config.html
+    if(override){
+      this.config=deepMerge(this.config,override);
+      this.avvisi.push("Attive modifiche locali alla configurazione ARERA "+
+        "(pagina Configurazione): i valori possono differire da config_tariffe.json.");
+    }
+    this.pun=await this._fetchJson("dati/pun.json",PUN_FALLBACK,
+      "dati/pun.json non raggiungibile: uso il PUN integrato.");
+    const oggi=new Date().toISOString().slice(0,10);
+    if(oggi>this.config.meta.validoAl)
+      this.avvisi.push(`Tariffe ARERA ${this.config.meta.versione} scadute il `+
+        `${this.config.meta.validoAl}: aggiorna config_tariffe.json.`);
+  },
+  async _fetchJson(url,fb,msg){
+    try{const r=await fetch(url,{cache:"no-store"});
+      if(!r.ok)throw 0;return await r.json();}
+    catch(e){this.avvisi.push(msg);return fb;}
+  },
+  mesiPun(){return Object.keys(this.pun.mesi).sort().reverse();},
+  punDelMese(m){return this.pun.mesi[m];}
+};
+
+/* ================= Calcolo ranking ================= */
+function calcolaTutto(){
+  const cfg=TariffManager.config,input=leggiInput(),pun=leggiPun();
+  const oggi=new Date().toISOString().slice(0,10);
+  const righe=offerte.map(o=>({tipo:"ml",off:o,
+    b:CalcEngine.bolletta("ml",input,o,cfg,pun),scad:statoScadenza(o,oggi),
+    reqMancanti:requisitiMancanti(o,input.ctx)}));
+  const stg={tipo:"stg",off:{id:"__stg",nome:"Servizio a Tutele Graduali",fornitore:"benchmark ARERA"},
+    b:CalcEngine.bolletta("stg",input,null,cfg,pun),scad:{stato:"nessuna",label:""},reqMancanti:[]};
+  const tutte=[...righe,stg].sort((a,b)=>a.b.totale-b.b.totale);
+  /* migliore = non scaduta E con requisiti obbligatori soddisfatti (sottoscrivibile) */
+  const best=tutte.find(r=>r.tipo==="ml"&&r.scad.stato!=="scaduta"&&!r.reqMancanti.length)||null;
+  /* benchmark selezionabile (pagina Benchmark): STG | Vulnerabili | una qualunque offerta */
+  const mtvOk=cfg.maggiorTutelaVulnerabili&&cfg.maggiorTutelaVulnerabili.ped_eur_kWh>0;
+  let bmId=localStorage.getItem("luceCheck.benchmark")||"__stg";
+  if(bmId==="__mtv"&&!mtvOk)bmId="__stg";
+  let benchmark;
+  if(bmId==="__mtv")
+    benchmark={id:"__mtv",nome:"Maggior Tutela Vulnerabili",tipo:"mtv",
+      b:CalcEngine.bolletta("mtv",input,null,cfg,pun)};
+  else if(bmId!=="__stg"&&righe.find(r=>r.off.id===bmId)){
+    const r=righe.find(x=>x.off.id===bmId);
+    benchmark={id:bmId,nome:r.off.nome,tipo:"ml",b:r.b,off:r.off};
+  }else benchmark={id:"__stg",nome:"Servizio a Tutele Graduali",tipo:"stg",b:stg.b};
+  return{tutte,best,stg,input,benchmark,mtvOk};
+}
+
+/* ================= Render ================= */
+function descrScontoBreve(r,div12){
+  const s=r.b.sconti;const parti=[];
+  const tot=s.preIVA+s.postIVA;
+  if(tot>0)parti.push(`−${eur(tot/div12)}`);
+  for(const i of s.ignorati)if(i.scontoSuLuce!==false||true){
+    const pot=i.motivo.startsWith("richiede")
+      ?`pot. −${eur(i.valore/div12)} (${i.motivo})`
+      :`sconto non su luce`;
+    parti.push(pot);
+  }
+  return parti.join(" · ");
+}
+/* colore stabile per fornitore (hash sul nome) */
+const PALETTE_FORN=["#0E7C7B","#B0553B","#3B5B8C","#7A6FB0","#A9741B","#4E7C3A","#96455E","#546A7B"];
+function coloreFornitore(nome){
+  let h=0;for(const c of String(nome||"?"))h=(h*31+c.charCodeAt(0))>>>0;
+  return PALETTE_FORN[h%PALETTE_FORN.length];
+}
+function renderLista(ris){
+  const box=$("listaOfferte");box.innerHTML="";
+  $("contaOfferte").textContent=offerte.length?offerte.length+" caricate":"nessuna";
+  if(!offerte.length){box.innerHTML='<div class="nota">Nessuna offerta: aggiungine una o importa un XLSX.</div>';return;}
+  const div12=stato.periodo==="mensile"?12:1;
+  for(const r of ris.tutte.filter(x=>x.tipo==="ml")){
+    const o=r.off,div=document.createElement("div");
+    div.className="cardOff"+(r.scad.stato==="scaduta"?" scaduta":"")+(o.id===stato.editId?" sel":"");
+    let badge="";
+    if(ris.best&&o.id===ris.best.off.id)badge='<span class="badge best">MIGLIORE</span>';
+    if(r.scad.stato==="scaduta")badge+='<span class="badge scad">SCADUTA</span>';
+    else if(r.scad.stato==="inScadenza")badge+=` <span class="badge warn">${r.scad.label}</span>`;
+    if(r.b.sconti.attivi.length)badge+=' <span class="badge sconto">sconto attivo</span>';
+    for(const q of(o.requisitoObbligatorio||[]))
+      badge+=r.reqMancanti.includes(q)
+        ?` <span class="badge req">⚠ richiede ${CONDIZIONI_LABEL[q]||q} — non sottoscrivibile</span>`
+        :` <span class="badge reqok">richiede ${CONDIZIONI_LABEL[q]||q} ✓</span>`;
+    const scNote=descrScontoBreve(r,div12);
+    const col=coloreFornitore(o.fornitore);
+    const iniziale=(o.fornitore||"?").trim().charAt(0).toUpperCase()||"?";
+    div.innerHTML=`<div class="avatar" style="background:${col}">${iniziale}</div>
+      <div class="corpo"><div class="nm">${o.nome}${badge}</div>
+      <span class="forn" style="background:${col}">${o.fornitore||"fornitore n.d."}</span>
+      <div class="dt">${o.tipoPrezzo==="fisso"?"fisso":"indicizzato "+o.indice}
+      · ${o.durataMesi} mesi ${r.scad.stato==="ok"?"· "+r.scad.label:""}</div>
+      ${scNote?`<div class="dt">${scNote}</div>`:""}</div>
+      <div class="destra"><div class="tot mono">${eur(r.b.totale/div12)}</div>
+      <div class="azioni"><button title="Modifica" data-az="mod" data-id="${o.id}">✎</button>
+      <button title="Elimina" data-az="del" data-id="${o.id}">🗑</button></div></div>`;
+    div.onclick=e=>{
+      const az=e.target.dataset&&e.target.dataset.az;
+      if(az==="del"){if(confirm(`Eliminare "${o.nome}"?`)){
+        offerte=offerte.filter(x=>x.id!==o.id);OfferStore.salva(offerte);
+        if(stato.editId===o.id){stato.editId=null;$("formOfferta").style.display="none";}
+        aggiorna();}e.stopPropagation();return;}
+      apriForm(o);e.stopPropagation();
+    };
+    box.appendChild(div);
+  }
+}
+function renderVincitore(ris){
+  const v=$("vincitore"),div12=stato.periodo==="mensile"?12:1;
+  if(!ris.best){
+    v.className="vuoto";
+    v.innerHTML=offerte.length
+      ?"Tutte le offerte caricate risultano scadute: nessuna migliore selezionabile."
+      :"Aggiungi almeno un'offerta per vedere la migliore.";
+    return;}
+  v.className="";
+  const b=ris.best.b,o=ris.best.off;
+  const seconda=ris.tutte.filter(r=>r.off.id!==o.id&&r.scad.stato!=="scaduta"
+    &&!r.reqMancanti.length)[0];
+  const dStg=b.totale-ris.benchmark.b.totale;
+  const sc=b.sconti.attivi.length
+    ?` · sconti applicati −${eur((b.sconti.preIVA+b.sconti.postIVA)/div12)}`:"";
+  v.innerHTML=`<div><div class="titolo">Offerta più conveniente</div>
+    <div class="nome">${o.nome} <small>${o.fornitore||""}</small></div>
+    <small>${statoScadenza(o).label?("Sottoscrivibile "+statoScadenza(o).label):""}${sc}</small></div>
+    <div style="text-align:right">
+    <div class="cifra mono">${eur(b.totale/div12)}<small style="font-size:13px">/${div12===12?"mese":"anno"}</small></div>
+    <small>${seconda?`+${eur((seconda.b.totale-b.totale)/div12)} la seconda (${seconda.off.nome})`:""}
+    · ${dStg>=0?"+":"−"}${eur(Math.abs(dStg)/div12)} vs ${ris.benchmark.nome}</small></div>`;
+}
+function renderTabella(ris){
+  const div12=stato.periodo==="mensile"?12:1,k=v=>eur(v/div12);
+  let h=`<tr><th>Offerta</th><th>Materia energia</th><th>Sconti</th><th>Dispacciamento</th>
+    <th>Rete</th><th>Oneri</th><th>Imposte</th><th>Totale</th><th>Δ vs migliore</th>
+    <th>Scadenza</th></tr>`;
+  const bestTot=ris.best?ris.best.b.totale:null;
+  for(const r of ris.tutte){
+    const b=r.b,cls=[r.tipo==="stg"?"stg":"",
+      ris.best&&r.off.id===ris.best.off.id?"best":"",
+      r.scad.stato==="scaduta"?"scaduta":""].join(" ");
+    const scTot=b.sconti.preIVA+b.sconti.postIVA;
+    const scPot=b.sconti.ignorati.filter(i=>i.motivo.startsWith("richiede"))
+      .reduce((a,i)=>a+i.valore,0);
+    const scTxt=scTot>0?("−"+eur(scTot/div12))
+      :(scPot>0?`<span class="nota">pot. −${eur(scPot/div12)}</span>`:"—");
+    const delta=bestTot===null?"—":(ris.best&&r.off.id===ris.best.off.id?"—"
+      :(b.totale>=bestTot?"+":"−")+eur(Math.abs(b.totale-bestTot)/div12));
+    const scad=r.scad.stato==="scaduta"?'<span class="badge scad">SCADUTA</span>'
+      :r.scad.stato==="inScadenza"?`<span class="badge warn">${r.scad.label}</span>`
+      :r.scad.label||"—";
+    h+=`<tr class="${cls}"><td>${r.off.nome}</td>
+      <td class="mono">${k(b.materia.totale)}</td><td class="mono">${scTxt}</td>
+      <td class="mono">${k(b.dispacciamento)}</td>
+      <td class="mono">${k(b.rete.totale)}</td><td class="mono">${k(b.oneri.totale)}</td>
+      <td class="mono">${k(b.accisa+b.iva)}</td><td class="mono"><b>${k(b.totale)}</b></td>
+      <td class="mono">${delta}</td><td>${scad}</td></tr>`;
+  }
+  $("tabRanking").innerHTML=h;
+}
+function renderScontrino(ris){
+  const sel=$("selScontrino");sel.innerHTML="";
+  const mlRighe=ris.tutte.filter(r=>r.tipo==="ml");
+  for(const r of mlRighe){
+    const o=document.createElement("option");
+    o.value=r.off.id;o.textContent=r.off.nome+(r.scad.stato==="scaduta"?" (scaduta)":"");
+    sel.appendChild(o);
+  }
+  const div12=stato.periodo==="mensile"?12:1,k=v=>eur(v/div12);
+  const cfg=TariffManager.config;
+  if(!mlRighe.length){
+    $("scTitoloML").textContent="—";$("scSottoML").textContent="";
+    $("scTabella").innerHTML='<div class="nota">Nessuna offerta caricata.</div>';
+    $("scSottoSTG").textContent="";return;
+  }
+  if(!stato.scontrinoId||!mlRighe.find(r=>r.off.id===stato.scontrinoId))
+    stato.scontrinoId=ris.best?ris.best.off.id:mlRighe[0].off.id;
+  sel.value=stato.scontrinoId;
+  const r=mlRighe.find(x=>x.off.id===stato.scontrinoId);if(!r)return;
+  const o=r.off,ml=r.b,bm=ris.benchmark.b;
+  const nk=v=>Math.round(v).toLocaleString("it-IT");
+  const pz=v=>v.toLocaleString("it-IT",{minimumFractionDigits:4,maximumFractionDigits:5});
+  $("scTitoloML").textContent=o.nome;
+  $("scTitoloBM").textContent=ris.benchmark.nome;
+  $("scSottoML").textContent="◼ "+o.nome+" — "+(o.fornitore||"")+" · "
+    +(o.tipoPrezzo==="fisso"?"prezzo fisso"
+      :`${o.indice} + ${pz(o.p0)} €/kWh`)
+    +` · QF ${eur(o.quotaFissa)}/anno · ${o.prezzoConPerdite?"perdite incluse":"perdite "+(o.perdite*100).toFixed(1)+"%"}`;
+  $("scSottoSTG").textContent="◼ "+ris.benchmark.nome+" — "
+    +(ris.benchmark.tipo==="stg"
+      ?`PUN ex post + dispacciamento · γ ${eur(cfg.stg.parametroGamma_eur_pod_anno)}/POD/anno · perdite ${(cfg.stg.perditeRete*100).toFixed(1)}%`
+      :ris.benchmark.tipo==="mtv"?"PED comprensivo di perdite e dispacciamento (TIV)"
+      :"offerta di riferimento scelta nella pagina Benchmark");
+  /* cella: importo + riga quantita' x prezzo */
+  const cella=(imp,qxp)=>`<span class="imp mono">${imp}</span>`+(qxp?`<span class="qxp mono">${qxp}</span>`:"");
+  const riga=(etic,cMl,cBm,cls)=>`<div class="scRiga ${cls||""}"><div class="etic">${etic}</div>`+
+    `<div class="v">${cMl}</div><div class="v">${cBm}</div></div>`;
+  /* dettagli sconto per lato: totali applicati (verdi) e opzionali (grigi, "se applicato") */
+  const scontiLato=b=>{
+    const pot=b.sconti.ignorati.filter(i=>i.motivo.startsWith("richiede"));
+    return{app:b.sconti.preIVA,pot:pot.reduce((a,i)=>a+i.valore,0),
+      appNomi:b.sconti.attivi.map(s=>CONDIZIONI_LABEL[s.scontoCond]||s.scontoTipo).join(", "),
+      potNomi:pot.map(i=>i.motivo.replace("richiede ","")).join(", ")};
+  };
+  const sMl=scontiLato(ml),sBm=scontiLato(bm);
+  let h="";
+  h+=riga("Spesa materia energia",cella(k(ml.materia.totale)),cella(k(bm.materia.totale)));
+  h+=riga("Quota fissa / commercializzazione",
+    cella(k(ml.materia.quotaFissa),`${div12===12?"1 mese":"12 mesi"} × ${pz(Math.abs(ml.materia.quotaFissa)/12)} €/mese`),
+    cella(k(bm.materia.quotaFissa),`${div12===12?"1 mese":"12 mesi"} × ${pz(Math.abs(bm.materia.quotaFissa)/12)} €/mese`),"sub");
+  for(const f of Object.keys(ml.consumi.fasce)){
+    const dMl=ml.materia.dettaglioFasce[f],dBm=bm.materia.dettaglioFasce[f];
+    const q=nk(dMl.kwh/div12);
+    h+=riga(`Energia ${f==="F0"?"":f}`,
+      cella(k(dMl.importo),`${q} kWh × ${pz(dMl.prezzo)} €/kWh`),
+      cella(k(dBm.importo),`${q} kWh × ${pz(dBm.prezzo)} €/kWh`),"sub");
+  }
+  if(sMl.app>0||sBm.app>0)
+    h+=riga("Sconti applicati (pre-IVA)",
+      sMl.app>0?cella("−"+eur(sMl.app/div12),sMl.appNomi):cella("—"),
+      sBm.app>0?cella("−"+eur(sBm.app/div12),sBm.appNomi):cella("—"),"sconto");
+  if(sMl.pot>0||sBm.pot>0)
+    h+=riga("Sconti opzionali non attivi",
+      sMl.pot>0?cella("se applicato: −"+eur(sMl.pot/div12),"con "+sMl.potNomi):cella("—"),
+      sBm.pot>0?cella("se applicato: −"+eur(sBm.pot/div12),"con "+sBm.potNomi):cella("—"),"grigia");
+  const dispQxp=(b,off)=>b.dispacciamento===0
+    ?(off&&off.dispIncluso?"incluso nel prezzo":"incluso nel PED")
+    :`${nk(b.consumi.totale/div12)} kWh × ${pz(cfg.stg.dispacciamento_eur_kWh)} €/kWh`;
+  h+=riga("Dispacciamento",
+    cella(k(ml.dispacciamento),dispQxp(ml,o)),
+    cella(k(bm.dispacciamento),dispQxp(bm,ris.benchmark.off)));
+  h+=riga("Trasporto e gestione contatore",cella(k(ml.rete.totale)),cella(k(bm.rete.totale)));
+  const mesi=div12===12?"1 mese":"12 mesi";
+  h+=riga("Quota fissa",
+    cella(k(ml.rete.quotaFissa),`${mesi} × ${pz(cfg.rete.quotaFissa_eur_mese)} €/mese`),
+    cella(k(bm.rete.quotaFissa),`${mesi} × ${pz(cfg.rete.quotaFissa_eur_mese)} €/mese`),"sub");
+  const inp=ris.input;
+  h+=riga("Quota potenza",
+    cella(k(ml.rete.quotaPotenza),`${inp.potenzaKw} kW × ${pz(cfg.rete.quotaPotenza_eur_kW_mese)} €/kW/mese × ${mesi.split(" ")[0]}`),
+    cella(k(bm.rete.quotaPotenza),`${inp.potenzaKw} kW × ${pz(cfg.rete.quotaPotenza_eur_kW_mese)} €/kW/mese × ${mesi.split(" ")[0]}`),"sub");
+  h+=riga("Quota energia",
+    cella(k(ml.rete.quotaEnergia),`${nk(ml.consumi.totale/div12)} kWh × ${pz(cfg.rete.quotaEnergia_eur_kWh)} €/kWh`),
+    cella(k(bm.rete.quotaEnergia),`${nk(bm.consumi.totale/div12)} kWh × ${pz(cfg.rete.quotaEnergia_eur_kWh)} €/kWh`),"sub");
+  const oneriQxp=b=>`${nk(b.consumi.totale/div12)} kWh × ${pz(cfg.oneriSistema.quotaEnergia_eur_kWh)} €/kWh`;
+  h+=riga("Oneri di sistema (ASOS+ARIM)",cella(k(ml.oneri.totale),oneriQxp(ml)),cella(k(bm.oneri.totale),oneriQxp(bm)));
+  if(ml.oneri.quotaFissa>0)
+    h+=riga("Quota fissa oneri (non residente)",
+      cella(k(ml.oneri.quotaFissa),"forfait annuo"),
+      cella(k(bm.oneri.quotaFissa),"forfait annuo"),"sub");
+  const accisaQxp=b=>b.accisa===0?"esente (residente ≤3 kW, ≤150 kWh/mese)"
+    :`${nk(b.accisa/cfg.imposte.accisa_eur_kWh/div12)} kWh × ${pz(cfg.imposte.accisa_eur_kWh)} €/kWh`;
+  h+=riga("Accisa",cella(k(ml.accisa),accisaQxp(ml)),cella(k(bm.accisa),accisaQxp(bm)));
+  h+=riga("IVA 10%",
+    cella(k(ml.iva),`${eur(ml.imponibile/div12)} × 10%`),
+    cella(k(bm.iva),`${eur(bm.imponibile/div12)} × 10%`));
+  if(ml.sconti.postIVA>0||bm.sconti.postIVA>0)
+    h+=riga("Bonus una tantum (post-IVA)",
+      ml.sconti.postIVA>0?cella("−"+eur(ml.sconti.postIVA/div12)):cella("—"),
+      bm.sconti.postIVA>0?cella("−"+eur(bm.sconti.postIVA/div12)):cella("—"),"sconto");
+  h+=riga("Totale "+(div12===12?"mensile":"annuo"),
+    cella(k(ml.totale)),cella(k(bm.totale)),"tot");
+  $("scTabella").innerHTML=h;
+}
+
+function renderTorta(ris){
+  const sel=$("selTorta");sel.innerHTML="";
+  for(const r of ris.tutte){
+    const o=document.createElement("option");
+    o.value=r.off.id;o.textContent=r.off.nome+(r.scad.stato==="scaduta"?" (scaduta)":"");
+    sel.appendChild(o);
+  }
+  if(!stato.tortaId||!ris.tutte.find(r=>r.off.id===stato.tortaId))
+    stato.tortaId=ris.best?ris.best.off.id:"__stg";
+  sel.value=stato.tortaId;
+  const r=ris.tutte.find(x=>x.off.id===stato.tortaId);if(!r)return;
+  const b=r.b,div12=stato.periodo==="mensile"?12:1;
+  const dati={labels:["Materia energia (netto sconti)","Trasporto e gestione","Oneri di sistema","Imposte (accisa+IVA)"],
+    valori:[Math.max(b.materia.totale-b.sconti.preIVA,0)+b.dispacciamento,
+      b.rete.totale,b.oneri.totale,b.accisa+b.iva]};
+  const tot=dati.valori.reduce((a,x)=>a+x,0);
+  if(grafico)grafico.destroy();
+  const css=getComputedStyle(document.documentElement);
+  const colTesto=css.getPropertyValue("--inchiostro").trim();
+  const colBordo=css.getPropertyValue("--pann").trim();
+  grafico=new Chart($("torta"),{type:"doughnut",
+    data:{labels:dati.labels.map((l,i)=>`${l} (${(dati.valori[i]/tot*100).toFixed(1)}%)`),
+      datasets:[{data:dati.valori,
+        backgroundColor:["#C0504A","#5B8DB8","#E8A013","#8A93A0"],
+        borderColor:colBordo,borderWidth:3}]},
+    options:{plugins:{legend:{position:"bottom",labels:{boxWidth:14,font:{size:12},color:colTesto}},
+      tooltip:{callbacks:{label:c=>` ${eur(c.parsed/div12)}`}}}}});
+  $("notaTorta").textContent=b.sconti.postIVA>0
+    ?`Il credito post-IVA (−${eur(b.sconti.postIVA/div12)}) non è nel grafico: riduce il totale fatturato.`:"";
+}
+let graficoPun=null;
+function renderPun(){
+  const anno=new Date().getFullYear();
+  $("annoPun").textContent=anno;
+  const mesi=Object.keys(TariffManager.pun.mesi).sort()
+    .filter(m=>m.startsWith(String(anno)));
+  if(!mesi.length)return;
+  const css=getComputedStyle(document.documentElement);
+  const colTesto=css.getPropertyValue("--inchiostro").trim();
+  const colGriglia=css.getPropertyValue("--linea").trim();
+  const serie=(f,colore,spess)=>({label:f,data:mesi.map(m=>TariffManager.pun.mesi[m][f]),
+    borderColor:colore,backgroundColor:colore,borderWidth:spess,pointRadius:2.5,tension:.25});
+  if(graficoPun)graficoPun.destroy();
+  graficoPun=new Chart($("graficoPun"),{type:"line",
+    data:{labels:mesi.map(m=>m.slice(5)),datasets:[
+      serie("F0",css.getPropertyValue("--accento").trim(),3),
+      serie("F1",css.getPropertyValue("--f1").trim(),1.2),
+      serie("F2",css.getPropertyValue("--f2").trim(),1.2),
+      serie("F3",css.getPropertyValue("--f3").trim(),1.2)]},
+    options:{plugins:{legend:{labels:{color:colTesto,boxWidth:14,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toLocaleString("it-IT",{minimumFractionDigits:4})} €/kWh`}}},
+      scales:{x:{ticks:{color:colTesto},grid:{color:colGriglia}},
+        y:{ticks:{color:colTesto,callback:v=>v.toFixed(3)},grid:{color:colGriglia}}}}});
+}
+function renderBenchmarkUI(ris){
+  const sel=$("selBenchmark");if(!sel)return;
+  sel.innerHTML="";
+  const opzioni=[["__stg","Servizio a Tutele Graduali (regolato)"]];
+  if(ris.mtvOk)opzioni.push(["__mtv","Maggior Tutela Vulnerabili (regolato)"]);
+  for(const o of offerte)opzioni.push([o.id,o.nome+" — "+(o.fornitore||"")]);
+  for(const[v,t]of opzioni){
+    const e=document.createElement("option");e.value=v;e.textContent=t;sel.appendChild(e);}
+  sel.value=ris.benchmark.id;
+  $("notaBenchmark").textContent=ris.mtvOk?""
+    :"Maggior Tutela Vulnerabili non selezionabile: compilare i valori PED in "+
+     "config_tariffe.json (blocco maggiorTutelaVulnerabili, fonte E2026-smt.xlsx).";
+}
+function aggiorna(){
+  const ris=calcolaTutto();
+  renderLista(ris);renderVincitore(ris);renderScontrino(ris);renderTabella(ris);
+  renderTorta(ris);renderPun();renderBenchmarkUI(ris);
+}
+/* ---- navigazione a pagine (sidebar) ---- */
+function mostraPagina(pg){
+  document.querySelectorAll(".pagina").forEach(p=>p.style.display=p.id===pg?"":"none");
+  document.querySelectorAll("#sidebar button").forEach(b=>
+    b.classList.toggle("attivo",b.dataset.pg===pg));
+}
+/* ---- pagina Fonti: rendering minimale di FONTI.md ---- */
+async function caricaFonti(){
+  const box=$("fontiBox");
+  try{
+    const r=await fetch("FONTI.md",{cache:"no-store"});
+    if(!r.ok)throw 0;
+    const md=await r.text();
+    box.innerHTML=mdMini(md);
+  }catch(e){
+    box.innerHTML='<div class="nota">FONTI.md non raggiungibile. Fonti principali: '+
+      '<a href="https://www.arera.it/area-operatori/prezzi-e-tariffe" target="_blank">ARERA Prezzi e tariffe</a> · '+
+      'PUN: energiachiara.it / dolomitienergia.it.</div>';
+  }
+}
+function mdMini(md){ // titoli, tabelle e link: quanto basta per FONTI.md
+  const righe=md.split("\n");let h="",inTab=false;
+  const inline=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank">$1</a>')
+    .replace(/`([^`]+)`/g,'<span class="mono">$1</span>')
+    .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
+  for(const r of righe){
+    const t=r.trim();
+    if(t.startsWith("|")){
+      if(/^\|[\s\-|:]+\|$/.test(t))continue;         // riga separatore
+      const celle=t.slice(1,-1).split("|").map(c=>inline(c.trim()));
+      if(!inTab){h+='<div class="wrapTab"><table>';inTab=true;
+        h+="<tr>"+celle.map(c=>`<th style="white-space:normal">${c}</th>`).join("")+"</tr>";}
+      else h+="<tr>"+celle.map(c=>`<td style="white-space:normal;text-align:left">${c}</td>`).join("")+"</tr>";
+      continue;
+    }
+    if(inTab){h+="</table></div>";inTab=false;}
+    if(t.startsWith("## "))h+=`<h3 style="margin:14px 0 6px">${inline(t.slice(3))}</h3>`;
+    else if(t.startsWith("# "))h+=`<h2 style="margin:6px 0">${inline(t.slice(2))}</h2>`;
+    else if(t)h+=`<p style="font-size:13px;margin:4px 0">${inline(t)}</p>`;
+  }
+  if(inTab)h+="</table></div>";
+  return h;
+}
+
+/* ================= Form ================= */
+function apriForm(o){
+  pulisciBadgeConfidenza();
+  stato.editId=o?o.id:null;
+  $("titoloForm").textContent=o?"Modifica: "+o.nome:"Nuova offerta";
+  $("oNome").value=o?o.nome:"";$("oFornitore").value=o?o.fornitore||"":"";
+  $("oTipo").value=o?o.tipoPrezzo:"indicizzato";
+  $("oIndice").value=o?o.indice:"PUN";
+  $("oDurata").value=o?String(o.durataMesi):"12";
+  $("oScadenza").value=o?o.scadenza||"":"";
+  $("oBio").checked=!!(o&&o.biorariaDisp);
+  $("oP0").value=o?o.p0:0.02;
+  $("oP1").value=o?o.pF1:0;$("oP2").value=o?o.pF2:0;$("oP3").value=o?o.pF3:0;
+  $("oQf").value=o?o.quotaFissa:144;
+  $("oPerdite").value=o?o.perdite*100:10;
+  $("oPmax").value=o&&o.prezzoMax!=null?o.prezzoMax:"";
+  $("oConPerdite").checked=!!(o&&o.prezzoConPerdite);
+  $("oDispIncluso").checked=!!(o&&o.dispIncluso);
+  $("oScTipo").value=o?o.scontoTipo:"—";
+  $("oScVal").value=o?o.scontoValore:0;
+  $("oScCond").value=o?o.scontoCond:"—";
+  $("oScLuce").checked=o?!!o.scontoSuLuce:true;
+  const req=(o&&o.requisitoObbligatorio)||[];
+  $("oReqDom").checked=req.includes("domiciliazione");
+  $("oReqEbill").checked=req.includes("domiciliazione+eBill");
+  $("oReqGas").checked=req.includes("dual_gas");
+  $("oReqSim").checked=req.includes("telefonia_1mobile");
+  $("oNote").value=o?o.note||"":"";
+  aggiornaFormVisibilita();
+  $("formOfferta").style.display="";
+  $("formOfferta").scrollIntoView({behavior:"smooth",block:"nearest"});
+  aggiorna();
+}
+function aggiornaFormVisibilita(){
+  const bio=$("oBio").checked,fisso=$("oTipo").value==="fisso";
+  $("oBoxFasce").style.display=bio?"":"none";
+  $("lblPrezzo").textContent=(fisso?"Prezzo mono":"Spread mono")+" (€/kWh)";
+  if(fisso)$("oIndice").value="—";
+  else if($("oIndice").value==="—")$("oIndice").value="PUN";
+}
+function salvaForm(){
+  const o={schemaVersion:2,id:stato.editId||nid(),
+    nome:$("oNome").value.trim(),fornitore:$("oFornitore").value.trim(),
+    tipoPrezzo:$("oTipo").value,indice:$("oIndice").value,
+    durataMesi:+$("oDurata").value,scadenza:$("oScadenza").value||null,
+    biorariaDisp:$("oBio").checked,
+    p0:+$("oP0").value||0,pF1:+$("oP1").value||0,pF2:+$("oP2").value||0,pF3:+$("oP3").value||0,
+    prezzoConPerdite:$("oConPerdite").checked,perdite:(+$("oPerdite").value||0)/100,
+    prezzoMax:$("oPmax").value===""?null:+$("oPmax").value,
+    quotaFissa:+$("oQf").value||0,dispIncluso:$("oDispIncluso").checked,
+    scontoTipo:$("oScTipo").value,scontoValore:+$("oScVal").value||0,
+    scontoCond:$("oScCond").value,scontoSuLuce:$("oScLuce").checked,
+    extra:(offerte.find(x=>x.id===stato.editId)||{}).extra||null,
+    requisitoObbligatorio:[
+      ...($("oReqDom").checked?["domiciliazione"]:[]),
+      ...($("oReqEbill").checked?["domiciliazione+eBill"]:[]),
+      ...($("oReqGas").checked?["dual_gas"]:[]),
+      ...($("oReqSim").checked?["telefonia_1mobile"]:[])],
+    note:$("oNote").value.trim()};
+  const v=validaOfferta(o);
+  if(!v.ok){alert("Offerta non valida:\n• "+v.errori.join("\n• "));return;}
+  const i=offerte.findIndex(x=>x.id===o.id);
+  if(i>=0)offerte[i]=o;else offerte.push(o);
+  OfferStore.salva(offerte);
+  stato.editId=null;$("formOfferta").style.display="none";
+  aggiorna();
+}
+
+/* ================= Copia tabella TSV ================= */
+function copiaTab(){
+  const ris=calcolaTutto(),div12=stato.periodo==="mensile"?12:1;
+  const n=v=>(v/div12).toFixed(2).replace(".",",");
+  const per=div12===12?"mensile":"annuo";
+  const righe=[["Offerta","Fornitore","Tipo prezzo","Indice","Durata mesi",
+    `Spesa materia energia ${per} (EUR)`,`Sconti applicati ${per} (EUR)`,
+    `Sconti potenziali non attivi ${per} (EUR)`,`Dispacciamento ${per} (EUR)`,
+    `Trasporto e gestione contatore ${per} (EUR)`,`Oneri di sistema ${per} (EUR)`,
+    `Imposte accisa e IVA ${per} (EUR)`,`Totale ${per} (EUR)`,
+    "Differenza vs migliore (EUR)","Scadenza sottoscrivibilita","Stato","Note CGF"].join("\t")];
+  const bestTot=ris.best?ris.best.b.totale:null;
+  for(const r of ris.tutte){
+    const b=r.b;
+    const scPot=b.sconti.ignorati.filter(i=>i.motivo.startsWith("richiede"))
+      .reduce((a,i)=>a+i.valore,0);
+    righe.push([r.off.nome,r.off.fornitore||"",
+      r.tipo==="stg"?"regolato STG":r.off.tipoPrezzo,
+      r.tipo==="stg"?"PUN":(r.off.indice||"—"),r.tipo==="stg"?"":r.off.durataMesi,
+      n(b.materia.totale),n(b.sconti.preIVA+b.sconti.postIVA),n(scPot),
+      n(b.dispacciamento),n(b.rete.totale),n(b.oneri.totale),
+      n(b.accisa+b.iva),n(b.totale),
+      bestTot===null?"":n(b.totale-bestTot),
+      r.off.scadenza||"",r.scad.stato==="scaduta"?"SCADUTA"
+        :(r.scad.stato==="inScadenza"?r.scad.label:"attiva"),
+      (r.off.note||"").replace(/\t|\n/g," ")].join("\t"));
+  }
+  navigator.clipboard.writeText(righe.join("\n")).then(
+    ()=>alert("Tabella copiata: incolla in Excel (Ctrl+V)."),
+    ()=>alert("Copia non riuscita: il browser ha bloccato gli appunti."));
+}
+
+/* ================= JSON I/O ================= */
+function esportaJson(){
+  const blob=new Blob([JSON.stringify(offerte,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download="offerte_luce_check_v2.json";a.click();
+}
+function importaJson(file){
+  const fr=new FileReader();
+  fr.onload=()=>{try{
+    const arr=JSON.parse(fr.result);
+    if(!Array.isArray(arr))throw 0;
+    importaConQuarantena(arr.map(o=>o.schemaVersion===2?o:migraV1(o)));
+  }catch(e){alert("File non valido: atteso un array JSON di offerte.");}};
+  fr.readAsText(file);
+}
+
+/* ================= Estrazione CTE via Worker (brief estrazione) ================= */
+const WorkerSettings={
+  KU:"luceCheck.workerUrl",KK:"luceCheck.workerKey",
+  KE:"luceCheck.workerEnabled",KM:"luceCheck.workerModel",
+  url(){return localStorage.getItem(this.KU)||"";},
+  key(){return localStorage.getItem(this.KK)||"";},
+  salva(u,k){localStorage.setItem(this.KU,u.trim());localStorage.setItem(this.KK,k.trim());},
+  enabled(){return localStorage.getItem(this.KE)==="1";},          // default: OFF
+  setEnabled(v){localStorage.setItem(this.KE,v?"1":"0");},
+  model(){const m=localStorage.getItem(this.KM);
+    return m==="haiku"?"haiku":"sonnet";},                          // default: sonnet
+  setModel(m){localStorage.setItem(this.KM,m==="haiku"?"haiku":"sonnet");}
+};
+const NOME_MODELLO={ // id API -> nome amichevole per il badge "estratto con ..."
+  "claude-haiku-4-5-20251001":"Haiku","claude-sonnet-4-6":"Sonnet"};
+/* ---- tema chiaro/scuro: default da sistema, override manuale persistito ---- */
+const TemaStore={
+  K:"luceCheck.tema",
+  corrente(){
+    const s=localStorage.getItem(this.K);
+    if(s==="dark"||s==="light")return s;
+    return matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";
+  },
+  set(t){localStorage.setItem(this.K,t);}
+};
+function applicaTema(t){
+  document.documentElement.dataset.tema=t;
+  const b=$("btTema");if(b)b.textContent=t==="dark"?"☀️":"🌙";
+}
+/* mappa campo schema -> id input del form (per compilazione e badge confidenza) */
+const CAMPO2INPUT={nome:"oNome",fornitore:"oFornitore",tipoPrezzo:"oTipo",indice:"oIndice",
+  durataMesi:"oDurata",scadenza:"oScadenza",biorariaDisp:"oBio",p0:"oP0",pF1:"oP1",pF2:"oP2",
+  pF3:"oP3",prezzoConPerdite:"oConPerdite",perdite:"oPerdite",prezzoMax:"oPmax",
+  quotaFissa:"oQf",dispIncluso:"oDispIncluso",scontoTipo:"oScTipo",scontoValore:"oScVal",
+  scontoCond:"oScCond",scontoSuLuce:"oScLuce",note:"oNote"};
+function pulisciBadgeConfidenza(){
+  document.querySelectorAll("#formOfferta .conf.dyn").forEach(e=>e.remove());
+  $("boxEstrazione").style.display="none";
+  $("estrAvvisi").style.display="none";
+  $("boxGolden").style.display="none";
+}
+function apriFormEstrazione(off,goldenPoints,warnings){
+  apriForm(null);
+  $("titoloForm").textContent="Revisione estrazione: "+(off.nome||"offerta");
+  /* precompila (enum sempre via select, mai testo libero) */
+  const setVal=(id,v)=>{const e=$(id);if(!e||v==null)return;
+    if(e.type==="checkbox")e.checked=!!v;else e.value=v;};
+  setVal("oNome",off.nome);setVal("oFornitore",off.fornitore);
+  if(ENUMS.tipoPrezzo.includes(off.tipoPrezzo))$("oTipo").value=off.tipoPrezzo;
+  if(ENUMS.indice.includes(off.indice))$("oIndice").value=off.indice;
+  if([12,24].includes(+off.durataMesi))$("oDurata").value=String(off.durataMesi);
+  setVal("oScadenza",off.scadenza);setVal("oBio",off.biorariaDisp);
+  setVal("oP0",off.p0);setVal("oP1",off.pF1);setVal("oP2",off.pF2);setVal("oP3",off.pF3);
+  setVal("oConPerdite",off.prezzoConPerdite);
+  setVal("oPerdite",off.perdite!=null?off.perdite*100:null);
+  $("oPmax").value=off.prezzoMax!=null?off.prezzoMax:"";
+  setVal("oQf",off.quotaFissa);setVal("oDispIncluso",off.dispIncluso);
+  if(ENUMS.scontoTipo.includes(off.scontoTipo))$("oScTipo").value=off.scontoTipo;
+  setVal("oScVal",off.scontoValore);
+  if(ENUMS.scontoCond.includes(off.scontoCond))$("oScCond").value=off.scontoCond;
+  setVal("oScLuce",off.scontoSuLuce);setVal("oNote",off.note);
+  aggiornaFormVisibilita();
+  /* badge di confidenza accanto alle etichette */
+  const conf=off.extractionConfidence||{};
+  for(const[campo,idInput]of Object.entries(CAMPO2INPUT)){
+    const e=$(idInput);if(!e)continue;
+    const label=(e.previousElementSibling&&e.previousElementSibling.tagName==="LABEL")
+      ?e.previousElementSibling
+      :(e.parentElement&&e.parentElement.tagName==="LABEL")?e.parentElement
+      :e.closest("div")?.querySelector("label");
+    if(!label||label.querySelector(".conf.dyn"))continue;
+    const livello=["alta","media","bassa"].includes(conf[campo])?conf[campo]:"na";
+    const dot=document.createElement("span");
+    dot.className="conf dyn "+livello;
+    dot.title="confidenza estrazione: "+(livello==="na"?"non indicata":livello);
+    label.appendChild(dot);
+  }
+  $("boxEstrazione").style.display="";
+  if(warnings&&warnings.length){
+    $("estrAvvisi").style.display="";
+    $("estrAvvisi").textContent="⚠ "+warnings.join(" · ");}
+  if(goldenPoints&&goldenPoints.length){
+    $("boxGolden").style.display="";
+    $("goldenPre").textContent=JSON.stringify(goldenPoints,null,2);}
+}
+async function estraiPdf(file){
+  if(!WorkerSettings.enabled()){
+    alert("Estrazione CTE disattivata — attivala in Impostazioni estrazione CTE.");return;}
+  const url=WorkerSettings.url(),key=WorkerSettings.key();
+  if(!url){alert("Configura prima il Worker URL nelle Impostazioni estrazione CTE.");return;}
+  if(file.size>15*1024*1024){alert("PDF troppo grande (max 15 MB).");return;}
+  const modello=WorkerSettings.model();
+  $("statoPdf").innerHTML='<span class="spin"></span>Lettura CTE in corso ('+
+    (modello==="haiku"?"Haiku":"Sonnet")+')… può richiedere ~30 s';
+  try{
+    const b64=await new Promise((res,rej)=>{
+      const fr=new FileReader();
+      fr.onload=()=>res(String(fr.result).split(",")[1]);
+      fr.onerror=()=>rej(new Error("lettura file fallita"));
+      fr.readAsDataURL(file);});
+    const resp=await fetch(url.replace(/\/$/,"")+"/extract",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","X-Luce-Check-Key":key},
+      body:JSON.stringify({pdfBase64:b64,filename:file.name,model:modello})});
+    const data=await resp.json();
+    if(!data.ok||!data.offerta)throw new Error((data.error||("HTTP "+resp.status))+
+      (data.rawText?("\n\nOutput grezzo del modello:\n"+String(data.rawText).slice(0,600)):""));
+    const usato=NOME_MODELLO[data.modelUsato]||data.modelUsato||"";
+    $("statoPdf").innerHTML='Estrazione completata'+(usato
+      ?' <span class="badge info">estratto con '+usato+'</span>':"")+': verifica e conferma.';
+    apriFormEstrazione(data.offerta,data.goldenPoints,data.warnings);
+  }catch(e){
+    $("statoPdf").textContent="";
+    alert("Estrazione non riuscita: "+e.message+
+      "\n\nPuoi comunque inserire l'offerta a mano: apro il form vuoto.");
+    apriForm(null);
+  }
+}
+/* sincronizza pulsante PDF, switch e segmented con lo stato salvato */
+function aggiornaWorkerUI(){
+  const on=WorkerSettings.enabled();
+  $("swWorker").checked=on;
+  $("swStato").textContent=on?"attiva":"disattivata";
+  $("btPdf").disabled=!on;
+  $("btPdf").title=on?"":"Estrazione CTE disattivata — attivala in Impostazioni";
+  if(!on&&!$("statoPdf").querySelector(".spin"))
+    $("statoPdf").textContent="Estrazione CTE disattivata — attivala in Impostazioni.";
+  else if(on&&$("statoPdf").textContent.startsWith("Estrazione CTE disattivata"))
+    $("statoPdf").textContent="";
+  document.querySelectorAll("#segModello button").forEach(b=>
+    b.classList.toggle("attivo",b.dataset.m===WorkerSettings.model()));
+}
+
+/* ================= Wiring ================= */
+function wiring(){
+  applicaTema(TemaStore.corrente());
+  $("btTema").onclick=()=>{
+    const nuovo=document.documentElement.dataset.tema==="dark"?"light":"dark";
+    TemaStore.set(nuovo);applicaTema(nuovo);aggiorna();   // ridisegna anche il grafico
+  };
+  $("swWorker").onchange=()=>{
+    WorkerSettings.setEnabled($("swWorker").checked);aggiornaWorkerUI();};
+  document.querySelectorAll("#segModello button").forEach(b=>b.onclick=()=>{
+    WorkerSettings.setModel(b.dataset.m);aggiornaWorkerUI();});
+  aggiornaWorkerUI();
+  $("btPdf").onclick=()=>{
+    if(!WorkerSettings.enabled()){
+      alert("Estrazione CTE disattivata — attivala in Impostazioni estrazione CTE.");
+      $("detWorker").open=true;return;}
+    $("filePdf").click();};
+  $("filePdf").onchange=e=>{if(e.target.files[0])estraiPdf(e.target.files[0]);e.target.value="";};
+  $("setWorkerUrl").value=WorkerSettings.url();
+  $("setWorkerKey").value=WorkerSettings.key();
+  $("btSalvaWorker").onclick=()=>{
+    WorkerSettings.salva($("setWorkerUrl").value,$("setWorkerKey").value);
+    alert("Impostazioni Worker salvate in questo browser.");};
+  $("btCopiaGolden").onclick=()=>{
+    navigator.clipboard.writeText($("goldenPre").textContent).then(
+      ()=>alert("Golden points copiati."),()=>alert("Copia bloccata dal browser."));};
+  $("selScontrino").onchange=()=>{stato.scontrinoId=$("selScontrino").value;aggiorna();};
+  document.querySelectorAll("#sidebar button").forEach(b=>b.onclick=()=>mostraPagina(b.dataset.pg));
+  $("selBenchmark").onchange=()=>{
+    localStorage.setItem("luceCheck.benchmark",$("selBenchmark").value);aggiorna();};
+  document.querySelectorAll("#tgPeriodo button").forEach(b=>b.onclick=()=>{
+    const nuovo=b.dataset.v;
+    if(nuovo!==stato.periodo){
+      const f=nuovo==="mensile"?1/12:12;
+      for(const id of["kF0","kF1","kF2","kF3"]){
+        const e=$(id);e.value=Math.round((+e.value||0)*f*100)/100;}
+      stato.periodo=nuovo;}
+    document.querySelectorAll("#tgPeriodo button").forEach(x=>x.classList.toggle("attivo",x===b));
+    aggiorna();
+  });
+  document.querySelectorAll("#tgFasce button").forEach(b=>b.onclick=()=>{
+    stato.fasce=b.dataset.v;
+    document.querySelectorAll("#tgFasce button").forEach(x=>x.classList.toggle("attivo",x===b));
+    $("boxMono").style.display=stato.fasce==="mono"?"":"none";
+    $("boxMulti").style.display=stato.fasce==="multi"?"":"none";
+    $("punFasceBox").style.display=stato.fasce==="multi"&&$("punManuale").checked?"grid":"none";
+    aggiorna();
+  });
+  $("punManuale").onchange=()=>{
+    $("boxPunManuale").style.display=$("punManuale").checked?"":"none";
+    $("mesePun").disabled=$("punManuale").checked;
+    $("punFasceBox").style.display=stato.fasce==="multi"&&$("punManuale").checked?"grid":"none";
+    aggiorna();};
+  $("btNuova").onclick=()=>apriForm(null);
+  $("btAnnulla").onclick=()=>{stato.editId=null;$("formOfferta").style.display="none";aggiorna();};
+  $("btSalva").onclick=salvaForm;
+  $("oBio").onchange=aggiornaFormVisibilita;
+  $("oTipo").onchange=aggiornaFormVisibilita;
+  $("btCopiaTab").onclick=copiaTab;
+  $("btXlsxOut").onclick=()=>esportaXlsx(offerte);
+  $("btXlsxIn").onclick=()=>$("fileXlsx").click();
+  $("fileXlsx").onchange=e=>{if(e.target.files[0])
+    importaXlsx(e.target.files[0],importaConQuarantena);e.target.value="";};
+  $("btJsonOut").onclick=esportaJson;
+  $("btJsonIn").onclick=()=>$("fileJson").click();
+  $("fileJson").onchange=e=>{if(e.target.files[0])importaJson(e.target.files[0]);e.target.value="";};
+  $("selTorta").onchange=()=>{stato.tortaId=$("selTorta").value;aggiorna();};
+  $("btIncolla").onclick=()=>$("dlgCte").showModal();
+  $("btChiudiDlg").onclick=()=>$("dlgCte").close();
+  $("btAnalizza").onclick=()=>{
+    const r=CteParser.analizza($("testoCte").value);
+    if(!r.trovati.length){$("esitoParse").textContent="Nessun dato riconosciuto: compila il form a mano.";return;}
+    $("esitoParse").textContent="Trovato: "+r.trovati.join(" · ")+" — verifica nel form.";
+    apriForm(null);
+    if(r.tipoPrezzo)$("oTipo").value=r.tipoPrezzo;
+    if(r.indice)$("oIndice").value=r.indice;
+    if(r.durataMesi)$("oDurata").value=String(r.durataMesi);
+    if(r.p0!=null)$("oP0").value=r.p0;
+    if(r.prezzoMax!=null)$("oPmax").value=r.prezzoMax;
+    if(r.quotaFissa!=null)$("oQf").value=r.quotaFissa;
+    if(r.perdite!=null)$("oPerdite").value=r.perdite;
+    if(r.prezzoConPerdite)$("oConPerdite").checked=true;
+    if(r.dispIncluso)$("oDispIncluso").checked=true;
+    if(r.scadenza)$("oScadenza").value=r.scadenza;
+    aggiornaFormVisibilita();
+    $("dlgCte").close();};
+  document.querySelectorAll(".pannello input,.pannello select")
+    .forEach(e=>e.addEventListener("input",aggiorna));
+}
+
+async function avvio(){
+  await TariffManager.carica();
+  const cfg=TariffManager.config,oggi=new Date().toISOString().slice(0,10);
+  const badge=$("badgeTariffe");
+  badge.textContent=`tariffe ${cfg.meta.versione} · fino al ${cfg.meta.validoAl}`;
+  if(oggi>cfg.meta.validoAl)badge.classList.add("scaduto");
+  $("avvisi").innerHTML=TariffManager.avvisi.map(a=>`<div class="avviso">⚠ ${a}</div>`).join("");
+  const sel=$("mesePun");
+  for(const m of TariffManager.mesiPun()){
+    const p=TariffManager.punDelMese(m),o=document.createElement("option");
+    o.value=m;o.textContent=`${m} — ${p.F0.toLocaleString("it-IT",{minimumFractionDigits:4})} €/kWh${p.parziale?" (parziale)":""}`;
+    sel.appendChild(o);}
+  $("notaPun").textContent=`Fonte PUN: ${TariffManager.pun.meta.fonte} · agg. ${TariffManager.pun.meta.ultimoAggiornamento}`;
+  offerte=OfferStore.carica();
+  if(!offerte.length){offerte=SEED.slice();OfferStore.salva(offerte);}
+  wiring();caricaFonti();aggiorna();
+}
+avvio();
+</script>
+</body>
+</html>
