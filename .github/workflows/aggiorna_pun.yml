@@ -1,41 +1,34 @@
-name: Aggiorna PUN da GME
+name: Promemoria PUN e tariffe
+
+# Il fetch automatico dal GME e' stato rimosso (dal 15/10/2025 il GME richiede
+# registrazione). L'aggiornamento del PUN e' manuale: dati da energiachiara.it /
+# dolomitienergia.it, inseriti con scripts/aggiorna_pun.py.
+# Questo workflow fa SOLO da promemoria: ogni giorno 3 del mese verifica che il
+# mese precedente sia presente in dati/pun.json e che config_tariffe.json non sia
+# scaduto, emettendo warning nel log.
 
 on:
+  schedule:
+    - cron: "30 6 3 * *"
   workflow_dispatch: {}
-  # Scheduling automatico disattivato: GME richiede registrazione API dal 15/10/2025.
-  # Aggiornamento di dati/pun.json ora manuale, una volta al mese.
-
-permissions:
-  contents: write
 
 jobs:
-  aggiorna:
+  promemoria:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: Installa dipendenze
-        run: pip install mercati-energetici
-
-      - name: Scarica e calcola medie PUN
-        run: python scripts/aggiorna_pun.py
-
-      - name: Avviso tariffe ARERA scadute
+      - name: Verifica mese PUN precedente
+        run: |
+          if ! python scripts/aggiorna_pun.py --check; then
+            echo "::warning title=PUN da aggiornare::Manca il mese precedente in dati/pun.json - inserirlo con scripts/aggiorna_pun.py (fonti in FONTI.md)."
+          fi
+      - name: Verifica validita tariffe ARERA
         run: |
           VALIDO_AL=$(python -c "import json;print(json.load(open('config_tariffe.json'))['meta']['validoAl'])")
           OGGI=$(date +%F)
           if [[ "$OGGI" > "$VALIDO_AL" ]]; then
-            echo "::warning title=Tariffe ARERA scadute::config_tariffe.json valido fino al $VALIDO_AL - aggiornare i valori del nuovo trimestre."
+            echo "::warning title=Tariffe ARERA scadute::config_tariffe.json valido fino al $VALIDO_AL - aggiornare i valori del nuovo trimestre (fonti in FONTI.md)."
           fi
-
-      - name: Commit se cambiato
-        run: |
-          git config user.name "pun-bot"
-          git config user.email "actions@github.com"
-          git add dati/pun.json
-          git diff --cached --quiet || git commit -m "Aggiornamento PUN $(date +%F)"
-          git push
