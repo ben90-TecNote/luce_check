@@ -1,0 +1,85 @@
+{
+  "meta": {
+    "descrizione": "Snapshot calibrato sugli 8 punti della scheda di confrontabilita CASA FLEX (maggio 2026). NON sono valori ARERA reali: servono solo alla riproducibilita del Tier 2.",
+    "calibratoIl": "2026-07-11",
+    "toleranzaTier2": "1%"
+  },
+  "punRef": {
+    "F0": 0.1766206
+  },
+  "rete": {
+    "quotaFissa_eur_mese": 3.9425,
+    "quotaPotenza_eur_kW_mese": 3.953333,
+    "quotaEnergia_eur_kWh": 0.01473
+  },
+  "oneriSistema": {
+    "quotaEnergia_eur_kWh": 0.033153,
+    "quotaFissaNonResidente_eur_anno": 177.4961
+  },
+  "stg": {
+    "parametroGamma_eur_pod_anno": -72.65,
+    "dispacciamento_eur_kWh": 0.013,
+    "dispacciamentoPerditeIncluse": true,
+    "cpstgd_eur_kWh": 0,
+    "perditeRete": 0.102
+  },
+  "imposte": {
+    "accisa_eur_kWh": 0.0227,
+    "esenzioneResidente": {
+      "kWhMese": 150,
+      "potenzaMax_kW": 3,
+      "sogliaRecupero_kWhMese": 220
+    },
+    "iva": 0.1
+  },
+  "puntiGolden": [
+    {
+      "kWh": 1500,
+      "kW": 3,
+      "residente": true,
+      "attesoEsclImposte": 812.83
+    },
+    {
+      "kWh": 2200,
+      "kW": 3,
+      "residente": true,
+      "attesoEsclImposte": 1006.78
+    },
+    {
+      "kWh": 2700,
+      "kW": 3,
+      "residente": true,
+      "attesoEsclImposte": 1145.31
+    },
+    {
+      "kWh": 3200,
+      "kW": 3,
+      "residente": true,
+      "attesoEsclImposte": 1283.85
+    },
+    {
+      "kWh": 900,
+      "kW": 3,
+      "residente": false,
+      "attesoEsclImposte": 824.09
+    },
+    {
+      "kWh": 4000,
+      "kW": 3,
+      "residente": false,
+      "attesoEsclImposte": 1683.01
+    },
+    {
+      "kWh": 3500,
+      "kW": 4.5,
+      "residente": true,
+      "attesoEsclImposte": 1438.12
+    },
+    {
+      "kWh": 6000,
+      "kW": 6,
+      "residente": true,
+      "attesoEsclImposte": 2201.95
+    }
+  ]
+}
