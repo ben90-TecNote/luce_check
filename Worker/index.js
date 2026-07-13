@@ -2,29 +2,38 @@
  * luce-check-extract — Cloudflare Worker per l'estrazione CTE via Anthropic API.
  *
  * DEPLOY (manuale, dashboard Cloudflare):
- *   1. Workers & Pages → Create → Worker → incolla questo file (Quick Edit) → Deploy.
- *   2. Settings → Variables and Secrets → aggiungi (tipo "Secret"):
+ *   1. Workers & Pages → luce-check-extract → Modifica codice → incolla questo file → Salva
+ *      e distribuisci.
+ *   2. Settings → Variables and Secrets → verifica che siano presenti (tipo "Secret"):
  *        ANTHROPIC_API_KEY   = chiave da console.anthropic.com (serve account API con
  *                              fatturazione attiva: un abbonamento consumer NON basta)
  *        SHARED_PASSPHRASE   = stringa a tua scelta (la stessa da inserire nell'app)
- *      Variabile normale (tipo "Text", facoltativa):
- *        MODEL_ID            = modello da usare. Default nel codice: "claude-sonnet-4-6".
- *                              Verifica il nome corrente su docs.claude.com prima del deploy.
- *   3. (Facoltativo, rate limit giornaliero) Storage & Databases → KV → crea namespace
- *      "luce-check-rl" → nel Worker: Settings → Bindings → KV Namespace, variabile RATE_KV.
- *      Senza binding il rate limit è semplicemente disattivato.
- *   4. Copia l'URL del Worker e incollalo nell'app (Impostazioni estrazione CTE) insieme
- *      alla passphrase.
+ *      Variabile normale (tipo "Text", facoltativa, usata solo come fallback se il client
+ *      non specifica un modello):
+ *        MODEL_ID            = modello di default. Verifica il nome corrente su
+ *                              docs.claude.com prima del deploy.
+ *   3. (Facoltativo, rate limit giornaliero) Storage & Databases → KV → namespace
+ *      "luce-check-rl" già bindato come RATE_KV (se non c'è, il rate limit è disattivato).
+ *   4. URL del Worker e passphrase vanno inseriti una volta nel pannello Impostazioni
+ *      dell'app (toggle ON/OFF + selettore modello Haiku/Sonnet).
  *
  * SICUREZZA (limiti onesti): la passphrase viaggia nelle richieste del browser ed è
  * visibile a chi ispeziona la rete sul sito pubblico: è una barriera contro l'uso casuale,
  * NON una vera autenticazione. Le protezioni reali sono il rate limit KV e un alert di
  * budget sulla dashboard Anthropic.
+ *
+ * NOVITA' rispetto alla versione precedente: il client puo' scegliere il modello da usare
+ * (Haiku 4.5, piu' economico, o Sonnet, piu' accurato) inviando il campo "model" nel body
+ * della richiesta POST /extract: "haiku" | "sonnet". Se assente, si usa MODEL_ID (env) o
+ * Sonnet come fallback finale. La risposta include "modelUsato" per riscontro lato UI.
  */
 
 const ORIGIN_PERMESSA = "https://ben90-tecnote.github.io";
 const LIMITE_GIORNALIERO = 50;          // richieste/giorno (se RATE_KV configurato)
 const MAX_PDF_BYTES = 15 * 1024 * 1024; // 15 MB
+
+const MODELLO_HAIKU = "claude-haiku-4-5-20251001";
+const MODELLO_SONNET = "claude-sonnet-4-6";
 
 const CORS = {
   "Access-Control-Allow-Origin": ORIGIN_PERMESSA,
@@ -178,7 +187,15 @@ function parseRisposta(testo) {
   return JSON.parse(pulito);
 }
 
-async function chiamaAnthropic(env, pdfBase64, messaggioExtra) {
+/** Risolve quale modello usare in base alla scelta del client ("haiku"|"sonnet"),
+ *  con fallback a MODEL_ID (env) e infine a Sonnet come default finale. */
+function risolviModello(env, richiesto) {
+  if (richiesto === "haiku") return MODELLO_HAIKU;
+  if (richiesto === "sonnet") return MODELLO_SONNET;
+  return env.MODEL_ID || MODELLO_SONNET;
+}
+
+async function chiamaAnthropic(env, pdfBase64, messaggioExtra, modello) {
   const contenuto = [
     { type: "document",
       source: { type: "base64", media_type: "application/pdf", data: pdfBase64 } },
@@ -193,7 +210,7 @@ async function chiamaAnthropic(env, pdfBase64, messaggioExtra) {
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: env.MODEL_ID || "claude-sonnet-4-6",
+      model: modello,
       max_tokens: 2000,
       messages: [{ role: "user", content: contenuto }],
     }),
@@ -226,8 +243,14 @@ export default {
     if (request.method !== "POST" || url.pathname !== "/extract")
       return rispostaJson({ ok: false, error: "usa POST /extract" }, 404);
 
-    // 1. passphrase
-    if (request.headers.get("X-Luce-Check-Key") !== env.SHARED_PASSPHRASE)
+    // 1. passphrase: principale oppure "family" (secret separato, facoltativo).
+    //    FAMILY_PASSPHRASE va aggiunta come secret nel dashboard (Settings → Variables
+    //    and Secrets, tipo "Secret"); e' quella da dare ai familiari, cosi' la
+    //    passphrase principale non viene mai condivisa ne' esposta.
+    const chiave = request.headers.get("X-Luce-Check-Key");
+    const chiaveOk = chiave === env.SHARED_PASSPHRASE ||
+      (env.FAMILY_PASSPHRASE && chiave === env.FAMILY_PASSPHRASE);
+    if (!chiaveOk)
       return rispostaJson({ ok: false, error: "passphrase mancante o errata" }, 401);
 
     // rate limit (prima della chiamata a pagamento)
@@ -246,15 +269,17 @@ export default {
     if (pdfBase64.length * 0.75 > MAX_PDF_BYTES)
       return rispostaJson({ ok: false, error: "PDF oltre 15 MB" }, 413);
 
+    const modelloScelto = risolviModello(env, body && body.model);
+
     // 3-4. chiamata + parse con un retry
     let grezzo = "";
     try {
-      grezzo = await chiamaAnthropic(env, pdfBase64, null);
+      grezzo = await chiamaAnthropic(env, pdfBase64, null, modelloScelto);
       let dati;
       try { dati = parseRisposta(grezzo); }
       catch {
         grezzo = await chiamaAnthropic(env, pdfBase64,
-          "Rispondi SOLO con l'oggetto JSON valido, nessun testo prima o dopo.");
+          "Rispondi SOLO con l'oggetto JSON valido, nessun testo prima o dopo.", modelloScelto);
         try { dati = parseRisposta(grezzo); }
         catch { return rispostaJson({ ok: false, error: "parse", rawText: grezzo }); }
       }
@@ -272,6 +297,7 @@ export default {
         offerta: o,
         goldenPoints: Array.isArray(dati.goldenPoints) ? dati.goldenPoints : null,
         warnings: Array.isArray(dati.warnings) ? dati.warnings : [],
+        modelUsato: modelloScelto,
       });
     } catch (e) {
       return rispostaJson({ ok: false, error: String(e.message || e),
