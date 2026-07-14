@@ -3,63 +3,46 @@
     "versione": "2026-Q3",
     "validoDal": "2026-07-01",
     "validoAl": "2026-09-30",
-    "fonte": "ARERA del. 219/2026/R/eel, 218/2026/R/eel, 227/2026/R/com, 575/2025/R/eel (tabelle SEN 1/7/2026)",
-    "ultimoAggiornamento": "2026-07-13",
-    "note": "Aggiornare ogni trimestre da https://www.servizioelettriconazionale.it/it-IT/tariffe e https://www.arera.it/consumatori/valori-della-materia-energia-per-il-servizio-a-tutele-graduali Fonti e cadenze: vedi FONTI.md."
+    "fonte": "ARERA · del. 219/2026/R/eel, 227/2026/R/com, 575/2025/R/eel"
   },
   "rete": {
-    "descrizione": "Trasporto e gestione contatore - Tariffa TD domestici (quote MENSILI come da tabella ARERA)",
     "quotaFissa_eur_mese": 1.92,
     "quotaPotenza_eur_kW_mese": 1.9766,
     "quotaEnergia_eur_kWh": 0.01473,
-    "fonte": "Tariffa TD domestici (sigma1+sigma2+sigma3, UC3, UC6) — ARERA, del. 575/2025/R/eel"
+    "fonte": "ARERA · del. 575/2025/R/eel · Tariffa TD (σ1+σ2+σ3, UC3, UC6)"
   },
   "oneriSistema": {
-    "descrizione": "ASOS + ARIM. Quota fissa applicata SOLO ai non residenti (ASOS 9509,16 c€/POD/anno, del. 227/2026/R/com; ARIM senza quota fissa per residenza). Quota potenza non applicata ai domestici.",
     "quotaEnergia_eur_kWh": 0.033153,
+    "asos_eur_kWh": 0.031515,
+    "arim_eur_kWh": 0.001638,
     "quotaFissaNonResidente_eur_anno": 95.09,
-    "fonte": "Oneri generali di sistema ASOS+ARIM domestici — ARERA, del. 227/2026/R/com"
+    "fonte": "ARERA · del. 227/2026/R/com"
   },
   "stg": {
-    "descrizione": "Servizio a Tutele Graduali domestici non vulnerabili (TIV, del. 362/2023)",
     "parametroGamma_eur_pod_anno": -72.65,
-    "affidabilitaGamma": "60% - valore 2024/25, aggiornato annualmente da ARERA: verificare",
     "dispacciamento_eur_kWh": 0.013,
     "dispacciamentoPerditeIncluse": true,
-    "cpstgd_eur_kWh": 0.0,
+    "cpstgd_eur_kWh": 0,
     "perditeRete": 0.102,
-    "fonte": "Condizioni STG domestici non vulnerabili — ARERA (TIV, del. 362/2023)"
-  },
-  "imposte": {
-    "accisa_eur_kWh": 0.0227,
-    "esenzioneResidente": {
-      "descrizione": "Residenti con potenza <= potenzaMax: esenti i primi kWhMese; recupero progressivo 1:1 oltre sogliaRecupero (TUA, Tabella A)",
-      "kWhMese": 150,
-      "potenzaMax_kW": 3,
-      "sogliaRecupero_kWhMese": 220
-    },
-    "iva": 0.1,
-    "fonte": "Accisa: TUA, Tabella A punto 13 · IVA 10% usi domestici"
-  },
-  "mercatoLibero": {
-    "perditeReteDefault": 0.1,
-    "offertaDefault": {
-      "nome": "CASA FLEX",
-      "quotaFissa_eur_anno": 207.6,
-      "tipoPrezzo": "indicizzato",
-      "spread_eur_kWh": 0.01991,
-      "prezzoFisso_eur_kWh": 0.13,
-      "prezzoComprensivoPerdite": false
-    }
+    "fonte": "ARERA · servizio a tutele graduali"
   },
   "maggiorTutelaVulnerabili": {
-    "descrizione": "Servizio di maggior tutela per clienti vulnerabili (condizioni economiche trimestrali ARERA)",
     "periodoRiferimento": "1 luglio - 30 settembre 2026",
     "materiaEnergia_eur_kWh": {
       "monorario": 0.16913,
       "F1": 0.15977,
       "F23": 0.1741
     },
-    "fonte": "Condizioni economiche per i clienti del Servizio di maggior tutela — ARERA, tabella trimestrale (E2026-smt.xlsx)"
+    "fonte": "ARERA · del. 219/2026/R/eel · Condizioni Maggior Tutela vulnerabili"
+  },
+  "imposte": {
+    "accisa_eur_kWh": 0.0227,
+    "esenzioneResidente": {
+      "kWhMese": 150,
+      "potenzaMax_kW": 3,
+      "sogliaRecupero_kWhMese": 220
+    },
+    "iva": 0.10,
+    "fonte": "TUA, Tabella A punto 13"
   }
 }
