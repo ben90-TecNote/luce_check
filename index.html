@@ -15,7 +15,7 @@
   --verde:#17B978; --verdino:#E2F7EC; --verdino-bordo:#8FDDB9;
   --warn:#A9741B; --warn-bg:#FCF3DF;
   --rosso:#C0392B; --rosso-bg:#FBECEC;
-  --blu:#3B5B8C; --blu-bg:#EAF1FA;
+  --blu:#3B5B8C; --blu-bg:#EAF1FA; --tinta:#F2EEE1;
   --ombra:0 1px 2px rgba(20,23,28,.05),0 5px 16px rgba(20,23,28,.07);
   --ombra-alta:0 2px 4px rgba(20,23,28,.08),0 10px 26px rgba(20,23,28,.13);
 }
@@ -27,7 +27,7 @@ html[data-tema="dark"]{
   --verde:#3FD99B; --verdino:#17342A; --verdino-bordo:#2E6B51;
   --warn:#E3B341; --warn-bg:#332B14;
   --rosso:#E57373; --rosso-bg:#3A2020;
-  --blu:#8FB4E8; --blu-bg:#1D2938;
+  --blu:#8FB4E8; --blu-bg:#1D2938; --tinta:#242A33;
   --ombra:0 1px 2px rgba(0,0,0,.35),0 5px 16px rgba(0,0,0,.35);
   --ombra-alta:0 2px 4px rgba(0,0,0,.4),0 10px 26px rgba(0,0,0,.5);
 }
@@ -161,7 +161,51 @@ tr.scaduta td:first-child{text-decoration:none}
 .avviso{background:var(--warn-bg);border:1px solid var(--warn);color:var(--warn);border-radius:10px;
   padding:9px 14px;font-size:13px;margin-bottom:8px}
 .avviso.err{background:var(--rosso-bg);border-color:var(--rosso);color:var(--rosso)}
-/* dettaglio scontrino: carta con bordo zig-zag, tabella unificata allineata */
+/* due carte scontrino affiancate, indipendenti (mockup) */
+.dueCarte{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.dueCarte{grid-template-columns:1fr}}
+.cartaScontrino{background:var(--pann);border:1px solid var(--linea);border-radius:14px;
+  box-shadow:var(--ombra);padding:14px 16px 0;position:relative;overflow:hidden}
+.cartaScontrino::after{content:"";display:block;height:12px;margin:12px -16px 0;
+  background:var(--linea);
+  -webkit-mask:linear-gradient(45deg,transparent 25%,#000 25%) 0 0/16px 16px repeat-x,
+    linear-gradient(-45deg,transparent 25%,#000 25%) 0 0/16px 16px repeat-x;
+  mask:linear-gradient(45deg,transparent 25%,#000 25%) 0 0/16px 16px repeat-x,
+    linear-gradient(-45deg,transparent 25%,#000 25%) 0 0/16px 16px repeat-x;
+  mask-composite:intersect;-webkit-mask-composite:source-in}
+.cartaScontrino::before{content:"";display:block;height:12px;margin:-14px -16px 12px;
+  background:var(--linea);
+  -webkit-mask:linear-gradient(135deg,transparent 25%,#000 25%) 0 0/16px 16px repeat-x,
+    linear-gradient(-135deg,transparent 25%,#000 25%) 0 0/16px 16px repeat-x;
+  mask:linear-gradient(135deg,transparent 25%,#000 25%) 0 0/16px 16px repeat-x,
+    linear-gradient(-135deg,transparent 25%,#000 25%) 0 0/16px 16px repeat-x;
+  mask-composite:intersect;-webkit-mask-composite:source-in}
+.scTitolo{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
+.scTitolo b{font-size:15px}
+.scTitolo button{border:0;background:none;color:var(--accento);cursor:pointer;
+  font-size:12px;font-weight:700;text-decoration:underline;padding:0}
+.scMacro{display:flex;justify-content:space-between;gap:8px;align-items:baseline;
+  background:var(--tinta);border-radius:6px;padding:6px 9px;margin-top:8px;
+  font-weight:700;font-size:13.5px}
+.scMacro .imp{font-weight:800}
+.scDett{display:flex;justify-content:space-between;gap:8px;align-items:baseline;
+  padding:3px 9px 3px 18px;font-size:12.5px;color:var(--grigio)}
+.scDett .imp{color:var(--inchiostro);font-weight:600}
+.scSconti{background:var(--verdino);border-radius:6px;padding:6px 9px;margin-top:8px}
+.scSconti .titoloSc{font-weight:800;font-size:13px;color:var(--verde);margin-bottom:2px}
+.scSconti .rigaSc{display:flex;align-items:baseline;gap:7px;font-size:12.5px;padding:2px 0}
+.scSconti .rigaSc .imp{margin-left:auto;font-weight:700}
+.scSconti .rigaSc.off{color:var(--grigio)}
+.scSconti .rigaSc.off .imp{text-decoration:line-through;font-weight:400}
+.scSconti input[type=checkbox]{width:15px;height:15px;accent-color:var(--verde);flex:none}
+.tagOpz{font-size:10px;font-weight:800;color:var(--warn)}
+.tagObb{font-size:10px;font-weight:800;color:var(--accento)}
+.scTotale{display:flex;justify-content:space-between;align-items:baseline;
+  border-top:3px solid var(--inchiostro);margin-top:10px;padding:8px 9px 2px;
+  font-size:16px;font-weight:800}
+.scValori{font-size:10.5px;color:var(--grigio);padding:6px 9px 10px;line-height:1.45}
+.wrapTortina{max-width:300px;margin:0 auto}
+/* dettaglio scontrino (legacy tabella unificata) */
 .scontrinoCarta{background:var(--input);padding:10px 14px;border-left:1px solid var(--linea);
   border-right:1px solid var(--linea)}
 .zz{height:11px;background-color:var(--linea);
@@ -213,27 +257,53 @@ footer{max-width:1280px;margin:26px auto 0;padding:0 20px;font-size:11.5px;color
 <body>
 
 <nav id="sidebar">
-  <button data-pg="pgConfronto" class="attivo" title="Confronto offerte">⚖️</button>
-  <button data-pg="pgBolletta" title="Carica bolletta">🧾</button>
-  <button data-pg="pgBenchmark" title="Benchmark di riferimento">🎯</button>
+  <button data-pg="pgScontrino" class="attivo" title="Dettaglio scontrino e classifica">🧾</button>
+  <button data-pg="pgProfilo" title="Profilo di consumo">👤</button>
+  <button data-pg="pgOfferte" title="Le mie offerte">🗂️</button>
   <button data-pg="pgFonti" title="Fonti ARERA">📚</button>
+  <button data-pg="pgAggiorna" title="Come aggiornare i dati">🔄</button>
   <button data-pg="pgEstrazione" title="Configurazione estrazione CTE">🤖</button>
   <div class="spazio"></div>
-  <a href="config.html" title="Configurazione ARERA">⚙️</a>
+  <a href="config.html" title="Configurazione ARERA (editor valori)">⚙️</a>
 </nav>
 
 <header>
   <h1>Luce <span>Check</span></h1>
   <div class="hdrDx">
-    <a href="config.html" class="hdrLink">⚙️ Configurazione ARERA</a>
     <button id="btTema" title="Modalità chiara/scura">🌙</button>
     <div id="badgeTariffe" class="mono">tariffe: —</div>
   </div>
 </header>
 
-<main class="pagina" id="pgConfronto">
-<!-- ============ COLONNA SINISTRA ============ -->
-<div class="colSx">
+<!-- ============ 1. SCONTRINO + CLASSIFICA ============ -->
+<main class="pagina pagina2" id="pgScontrino" style="max-width:1100px">
+  <div id="avvisi"></div>
+  <div id="vincitore" class="vuoto">Seleziona due voci da confrontare.</div>
+
+  <div class="dueCarte">
+    <div class="cartaScontrino" id="cartaA"></div>
+    <div class="cartaScontrino" id="cartaB"></div>
+  </div>
+
+  <div class="dueCarte">
+    <section class="blocco"><h2 class="sez">Composizione — colonna sinistra</h2>
+      <div class="wrapTortina"><canvas id="tortaA"></canvas></div></section>
+    <section class="blocco"><h2 class="sez">Composizione — colonna destra</h2>
+      <div class="wrapTortina"><canvas id="tortaB"></canvas></div></section>
+  </div>
+
+  <section class="blocco">
+    <h2 class="sez">Classifica offerte
+      <button class="bott sec mini" id="btCopiaTab">Copia per Excel</button></h2>
+    <div class="wrapTab"><table id="tabRanking"></table></div>
+    <div class="nota">Offerte scadute visibili ma escluse dalla scelta della migliore. STG =
+      benchmark regolato. Sconti condizionati non attivi mostrati come potenziali, non applicati.
+      Valori nel periodo selezionato.</div>
+  </section>
+</main>
+
+<!-- ============ 2. PROFILO DI CONSUMO ============ -->
+<main class="pagina pagina2" id="pgProfilo" style="display:none">
   <section class="pannello">
     <h2 class="sez">Profilo di consumo</h2>
     <div class="toggle" id="tgPeriodo">
@@ -274,17 +344,16 @@ footer{max-width:1280px;margin:26px auto 0;padding:0 20px;font-size:11.5px;color
     </div>
     <div class="nota" id="notaPun"></div>
   </section>
-
-  <section class="pannello">
-    <h2 class="sez">Condizioni (attivano gli sconti)</h2>
-    <label class="check"><input type="checkbox" id="cxDom"> Domiciliazione bancaria (SEPA)</label>
-    <label class="check"><input type="checkbox" id="cxEbill"> Bolletta elettronica</label>
-    <label class="check"><input type="checkbox" id="cxGas"> Gas attivo con lo stesso venditore</label>
-    <label class="check"><input type="checkbox" id="cxSim"> SIM 1Mobile attiva</label>
-    <div class="nota">Gli sconti condizionati si applicano solo se la condizione è attiva;
-      altrimenti sono mostrati come potenziali.</div>
+  <section class="blocco">
+    <h2 class="sez">Andamento PUN <span id="annoPun"></span></h2>
+    <div style="max-width:640px;margin:0 auto"><canvas id="graficoPun"></canvas></div>
+    <div class="nota">Medie mensili per fascia da dati/pun.json (fonte GME via fonti secondarie,
+      vedi Fonti).</div>
   </section>
+</main>
 
+<!-- ============ 3. LE MIE OFFERTE ============ -->
+<main class="pagina pagina2" id="pgOfferte" style="display:none">
   <section class="pannello">
     <h2 class="sez">Le mie offerte <span class="nota" id="contaOfferte"></span></h2>
     <div id="listaOfferte"></div>
@@ -305,7 +374,6 @@ footer{max-width:1280px;margin:26px auto 0;padding:0 20px;font-size:11.5px;color
     <div id="statoPdf" class="nota"></div>
 
   </section>
-
   <section class="pannello" id="formOfferta" style="display:none">
     <h2 class="sez"><span id="titoloForm">Nuova offerta</span></h2>
     <div id="boxEstrazione" style="display:none">
@@ -387,82 +455,9 @@ footer{max-width:1280px;margin:26px auto 0;padding:0 20px;font-size:11.5px;color
       <button class="bott sec" id="btAnnulla">Annulla</button>
     </div>
   </section>
-</div>
-
-<!-- ============ COLONNA DESTRA ============ -->
-<div class="colDx">
-  <div id="avvisi"></div>
-  <div id="vincitore" class="vuoto">Aggiungi almeno un'offerta per vedere la migliore.</div>
-
-  <section class="blocco">
-    <h2 class="sez">Dettaglio scontrino</h2>
-    <label>Offerta a confronto con lo STG:</label>
-    <select id="selScontrino" style="max-width:340px"></select>
-    <div class="scSotto" id="scSottoML"></div>
-    <div class="scSotto" id="scSottoSTG"></div>
-    <div class="zz zzTop"></div>
-    <div class="scontrinoCarta">
-      <div class="scTesta">
-        <div>Voce</div>
-        <div class="colML" id="scTitoloML">—</div>
-        <div class="colSTG" id="scTitoloBM">Tutele Graduali</div>
-      </div>
-      <div id="scTabella"></div>
-    </div>
-    <div class="zz zzBot"></div>
-  </section>
-
-  <section class="blocco">
-    <h2 class="sez">Classifica offerte
-      <button class="bott sec mini" id="btCopiaTab">Copia per Excel</button></h2>
-    <div class="wrapTab"><table id="tabRanking"></table></div>
-    <div class="nota">Offerte scadute visibili ma escluse dalla scelta della migliore. STG =
-      benchmark regolato. Sconti condizionati non attivi mostrati come potenziali, non applicati.
-      Valori nel periodo selezionato.</div>
-  </section>
-
-  <section class="blocco">
-    <h2 class="sez">Andamento PUN <span id="annoPun"></span></h2>
-    <div style="max-width:640px;margin:0 auto"><canvas id="graficoPun"></canvas></div>
-    <div class="nota">Medie mensili per fascia da dati/pun.json (fonte GME via fonti secondarie,
-      vedi Fonti).</div>
-  </section>
-
-  <section class="blocco">
-    <h2 class="sez">Composizione bolletta</h2>
-    <label>Mostra dettaglio di:</label>
-    <select id="selTorta" style="max-width:340px"></select>
-    <div id="wrapTorta"><canvas id="torta"></canvas></div>
-    <div class="nota" id="notaTorta"></div>
-  </section>
-</div>
 </main>
 
-<main class="pagina pagina2" id="pgBolletta" style="display:none">
-  <section class="blocco">
-    <h2 class="sez">Carica bolletta</h2>
-    <p style="font-size:14px">Qui arriverà il caricamento della <b>bolletta di dettaglio</b> (PDF):
-    un secondo prompt di estrazione nel Worker la trasformerà in dati strutturati e lo stesso
-    motore di calcolo la confronterà voce per voce con le offerte caricate.</p>
-    <div class="nota" style="margin-top:8px">Funzione in roadmap (sezione 2) — non ancora attiva
-    in questo sprint.</div>
-    <div class="barraBott"><button class="bott" disabled>📄 Carica bolletta (presto)</button></div>
-  </section>
-</main>
-
-<main class="pagina pagina2" id="pgBenchmark" style="display:none">
-  <section class="blocco">
-    <h2 class="sez">Benchmark di riferimento</h2>
-    <p style="font-size:14px">Scegli il riferimento del confronto: è la colonna di destra del
-    Dettaglio scontrino e il termine del "Δ vs benchmark" nel riquadro della migliore.
-    Non è più uno switch fisso: puoi confrontare contro il servizio regolato o contro
-    una qualunque delle tue offerte (es. il tuo contratto attuale).</p>
-    <label>Riferimento</label>
-    <select id="selBenchmark" style="max-width:420px"></select>
-    <div class="nota" id="notaBenchmark"></div>
-  </section>
-</main>
-
+<!-- ============ 4. FONTI ============ -->
 <main class="pagina pagina2" id="pgFonti" style="display:none">
   <section class="blocco">
     <h2 class="sez">Fonti ARERA e dati</h2>
@@ -470,6 +465,36 @@ footer{max-width:1280px;margin:26px auto 0;padding:0 20px;font-size:11.5px;color
   </section>
 </main>
 
+<!-- ============ 5. COME AGGIORNARE I DATI ============ -->
+<main class="pagina pagina2" id="pgAggiorna" style="display:none">
+  <section class="blocco">
+    <h2 class="sez">Come aggiornare i dati</h2>
+    <div class="avviso" style="background:var(--blu-bg);border-color:var(--blu);color:var(--blu)">
+      Claude si occupa di estrarre, verificare e preparare i valori pronti da incollare —
+      qui basta portare il file o il dato nuovo, il calcolo non serve farlo a mano.</div>
+    <div class="wrapTab"><table>
+      <tr><th>Cadenza</th><th>Cosa</th><th>Cosa fare</th></tr>
+      <tr><td>Trimestrale<br><span class="nota">gen, apr, lug, ott</span></td>
+        <td style="white-space:normal">ASOS/ARIM, STG, Maggior Tutela Vulnerabili</td>
+        <td style="white-space:normal;text-align:left">Aprire i link in
+          <a href="#" class="vaiFonti">Fonti ARERA</a>, scaricare gli xlsx, caricarli in chat
+          a Claude con "aggiorna le tariffe trimestrali"</td></tr>
+      <tr><td>Mensile</td><td style="white-space:normal">PUN</td>
+        <td style="white-space:normal;text-align:left">Copiare la tabella da energiachiara.it
+          o dolomitienergia.it, incollarla in chat a Claude</td></tr>
+      <tr><td>Annuale<br><span class="nota">dicembre, per l'anno dopo</span></td>
+        <td style="white-space:normal">Tariffa TD (rete)</td>
+        <td style="white-space:normal;text-align:left">Stesso link in
+          <a href="#" class="vaiFonti">Fonti ARERA</a>, stesso meccanismo di caricamento</td></tr>
+      <tr><td>Raro<br><span class="nota">nessun controllo programmato</span></td>
+        <td style="white-space:normal">Accisa / IVA</td>
+        <td style="white-space:normal;text-align:left">Solo se ci sono notizie di variazioni
+          fiscali</td></tr>
+    </table></div>
+  </section>
+</main>
+
+<!-- ============ 6. ESTRAZIONE CTE ============ -->
 <main class="pagina pagina2" id="pgEstrazione" style="display:none">
   <section class="blocco">
     <h2 class="sez">Configurazione estrazione CTE (Worker)</h2>
@@ -497,7 +522,6 @@ footer{max-width:1280px;margin:26px auto 0;padding:0 20px;font-size:11.5px;color
     </div>
   </section>
 </main>
-
 
 <dialog id="dlgCte">
   <h3>Incolla il testo della CTE</h3>
@@ -531,8 +555,9 @@ const CONFIG_FALLBACK={meta:{versione:"2026-Q3",validoDal:"2026-07-01",validoAl:
  oneriSistema:{quotaEnergia_eur_kWh:0.033153,quotaFissaNonResidente_eur_anno:95.09},
  stg:{parametroGamma_eur_pod_anno:-72.65,dispacciamento_eur_kWh:0.013,
    dispacciamentoPerditeIncluse:true,cpstgd_eur_kWh:0,perditeRete:0.102},
- maggiorTutelaVulnerabili:{quotaFissaVendita_eur_mese:0,ped_eur_kWh:0,
-   pedF1_eur_kWh:0,pedF23_eur_kWh:0},
+ maggiorTutelaVulnerabili:{periodoRiferimento:"1 luglio - 30 settembre 2026",
+   materiaEnergia_eur_kWh:{monorario:0.16913,F1:0.15977,F23:0.1741},
+   fonte:"Condizioni Maggior Tutela vulnerabili — ARERA (fallback embed)"},
  imposte:{accisa_eur_kWh:0.0227,
    esenzioneResidente:{kWhMese:150,potenzaMax_kW:3,sogliaRecupero_kWhMese:220},iva:0.10}};
 const PUN_FALLBACK={meta:{fonte:"fallback embed",ultimoAggiornamento:"2026-07-11"},
@@ -545,23 +570,13 @@ const ENUMS={
   scontoTipo:["—","perc_prezzo","eur_anno","eur_mese","bonus_unatantum"],
   scontoCond:["—","domiciliazione","domiciliazione+eBill","dual_gas","telefonia_1mobile"]
 };
-const CONDIZIONI={
-  "—":()=>true,
-  "domiciliazione":ctx=>!!ctx.domiciliazione,
-  "domiciliazione+eBill":ctx=>!!ctx.domiciliazione&&!!ctx.bollettaElettronica,
-  "dual_gas":ctx=>!!ctx.gasAttivo,
-  "telefonia_1mobile":ctx=>!!ctx.sim1Mobile
-};
-const CONDIZIONI_LABEL={"domiciliazione":"domiciliazione",
-  "domiciliazione+eBill":"domiciliazione + eBill","dual_gas":"gas dello stesso venditore",
-  "telefonia_1mobile":"SIM 1Mobile"};
+const CONDIZIONI_LABEL={"domiciliazione":"RID bancario",
+  "domiciliazione+eBill":"RID bancario + bolletta web",
+  "dual_gas":"gas dello stesso venditore","telefonia_1mobile":"SIM 1Mobile"};
 const REQ_VALORI=["domiciliazione","domiciliazione+eBill","dual_gas","telefonia_1mobile"];
-/* requisiti obbligatori NON soddisfatti dal contesto: se non vuoto,
-   l'offerta non e' sottoscrivibile (esclusa dalla scelta della migliore) */
-function requisitiMancanti(off,ctx){
-  if(!off||!Array.isArray(off.requisitoObbligatorio))return[];
-  return off.requisitoObbligatorio.filter(r=>!(CONDIZIONI[r]||(()=>false))(ctx||{}));
-}
+const TIPO_SCONTO_LABEL={"perc_prezzo":"Sconto % sul Corrispettivo Luce",
+  "eur_anno":"Sconto fisso annuo","eur_mese":"Sconto fisso mensile",
+  "bonus_unatantum":"Bonus una tantum"};
 
 /* ================= VALIDAZIONE (§8) ================= */
 function validaOfferta(o){
@@ -673,16 +688,20 @@ const CalcEngine={
     return{quotaFissa:cfgStg.parametroGamma_eur_pod_anno,energia,
       totale:cfgStg.parametroGamma_eur_pod_anno+energia,dettaglioFasce};
   },
-  /* §5.3: sconti con condizioni; ordine pre/post IVA */
-  sconti(off,ctx,energiaConsumo){
-    const out={preIVA:0,postIVA:0,attivi:[],ignorati:[]};
+  /* §5.3 rivisto (fix 2026-07-13): niente contesto globale.
+     Sconto "obbligatorio" (condizione assente o inclusa nei requisiti
+     dell'offerta) = sempre applicato. Sconto "opzionale" = checkbox nello
+     scontrino, default spuntata (miglior caso); `disabilitati` e' il Set di
+     chiavi deselezionate dall'utente per QUESTA offerta. */
+  sconti(off,energiaConsumo,disabilitati,requisiti){
+    const out={preIVA:0,postIVA:0,attivi:[],disattivati:[],nonLuce:[]};
     if(!off)return out;
     const lista=[];
     if(off.scontoTipo&&off.scontoTipo!=="—")
-      lista.push({scontoTipo:off.scontoTipo,scontoValore:off.scontoValore,
+      lista.push({key:"flat",scontoTipo:off.scontoTipo,scontoValore:off.scontoValore,
         scontoCond:off.scontoCond||"—",scontoSuLuce:!!off.scontoSuLuce});
-    if(Array.isArray(off.extra))for(const s of off.extra)
-      if(s.scontoTipo&&s.scontoTipo!=="—")lista.push(s);
+    if(Array.isArray(off.extra))off.extra.forEach((s,i)=>{
+      if(s.scontoTipo&&s.scontoTipo!=="—")lista.push({key:"extra"+i,...s});});
     for(const s of lista){
       let valore=0,fase="pre";
       switch(s.scontoTipo){
@@ -692,29 +711,32 @@ const CalcEngine={
         case"bonus_unatantum":
           valore=s.scontoValore*12/(off.durataMesi||12);fase="post";break;
       }
-      if(!s.scontoSuLuce){
-        out.ignorati.push({...s,valore,motivo:"applicato ad altra fornitura (non luce)"});
-        continue;}
-      const condOk=(CONDIZIONI[s.scontoCond]||(()=>false))(ctx||{});
-      if(!condOk){
-        out.ignorati.push({...s,valore,
-          motivo:"richiede "+(CONDIZIONI_LABEL[s.scontoCond]||s.scontoCond)});
-        continue;}
-      out.attivi.push({...s,valore,fase});
-      if(fase==="pre")out.preIVA+=valore;else out.postIVA+=valore;
+      const label=s.scontoCond!=="—"
+        ?(CONDIZIONI_LABEL[s.scontoCond]||s.scontoCond)
+        :(TIPO_SCONTO_LABEL[s.scontoTipo]||s.scontoTipo);
+      if(!s.scontoSuLuce){out.nonLuce.push({key:s.key,label,valore,fase});continue;}
+      const obbligatorio=s.scontoCond==="—"
+        ||(Array.isArray(requisiti)&&requisiti.includes(s.scontoCond));
+      const spuntato=obbligatorio||!(disabilitati&&disabilitati.has(s.key));
+      const voce={key:s.key,label,valore,fase,obbligatorio};
+      if(spuntato){out.attivi.push(voce);
+        if(fase==="pre")out.preIVA+=valore;else out.postIVA+=valore;}
+      else out.disattivati.push(voce);
     }
     return out;
   },
   materiaMTV(consumi,cfgMtv){
-    const qf=(cfgMtv.quotaFissaVendita_eur_mese||0)*12;
+    /* materia energia = valore fisso trimestrale ARERA per fascia
+       (niente quota fissa vendita, niente dispacciamento separato) */
+    const me=(cfgMtv&&cfgMtv.materiaEnergia_eur_kWh)||{};
     let energia=0;const dettaglioFasce={};
     for(const[f,kwh]of Object.entries(consumi.fasce)){
-      const prezzo=f==="F1"?(cfgMtv.pedF1_eur_kWh||cfgMtv.ped_eur_kWh)
-        :f==="F0"?cfgMtv.ped_eur_kWh
-        :(cfgMtv.pedF23_eur_kWh||cfgMtv.ped_eur_kWh);
+      const prezzo=f==="F1"?(me.F1||me.monorario||0)
+        :f==="F0"?(me.monorario||0)
+        :(me.F23||me.monorario||0);
       const voce=prezzo*kwh;dettaglioFasce[f]={prezzo,kwh,importo:voce};energia+=voce;
     }
-    return{quotaFissa:qf,energia,sconto:0,totale:qf+energia,dettaglioFasce};
+    return{quotaFissa:0,energia,sconto:0,totale:energia,dettaglioFasce};
   },
   dispacciamento(consumi,cfgStg,off){
     if(off&&off.dispIncluso)return 0;
@@ -748,8 +770,9 @@ const CalcEngine={
     const materia=tipo==="ml"?this.materiaMercatoLibero(consumi,off,pun)
       :tipo==="mtv"?this.materiaMTV(consumi,config.maggiorTutelaVulnerabili||{})
       :this.materiaSTG(consumi,config.stg,pun);
-    const sconti=tipo==="ml"?this.sconti(off,input.ctx,materia.energia)
-      :{preIVA:0,postIVA:0,attivi:[],ignorati:[]};
+    const sconti=tipo==="ml"
+      ?this.sconti(off,materia.energia,arguments[5],off&&off.requisitoObbligatorio)
+      :{preIVA:0,postIVA:0,attivi:[],disattivati:[],nonLuce:[]};
     const disp=tipo==="mtv"?0   // PED gia' comprensivo di dispacciamento
       :this.dispacciamento(consumi,config.stg,tipo==="ml"?off:null);
     const rete=this.rete(consumi,input.potenzaKw,config.rete);
@@ -990,7 +1013,8 @@ function leggiTariffOverride(){
 
 /* ================= Stato & UI ================= */
 const $=id=>document.getElementById(id);
-let stato={periodo:"annuale",fasce:"mono",editId:null,tortaId:null};
+let stato={periodo:"annuale",fasce:"mono",editId:null,
+  dettaglio:{A:false,B:false},scontiDisattivati:{}};
 let offerte=[];let grafico=null;
 const eur=v=>v.toLocaleString("it-IT",{style:"currency",currency:"EUR"});
 const nid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -1000,9 +1024,7 @@ function leggiInput(){
     kWh:stato.fasce==="multi"
       ?{F1:+$("kF1").value,F2:+$("kF2").value,F3:+$("kF3").value}
       :{F0:+$("kF0").value},
-    potenzaKw:+$("potenza").value,residente:$("residente").value==="1",
-    ctx:{domiciliazione:$("cxDom").checked,bollettaElettronica:$("cxEbill").checked,
-      gasAttivo:$("cxGas").checked,sim1Mobile:$("cxSim").checked}};
+    potenzaKw:+$("potenza").value,residente:$("residente").value==="1"};
 }
 function leggiPun(){
   if($("punManuale").checked){
@@ -1045,74 +1067,70 @@ const TariffManager={
 function calcolaTutto(){
   const cfg=TariffManager.config,input=leggiInput(),pun=leggiPun();
   const oggi=new Date().toISOString().slice(0,10);
+  const dis=id=>stato.scontiDisattivati[id]||null;
   const righe=offerte.map(o=>({tipo:"ml",off:o,
-    b:CalcEngine.bolletta("ml",input,o,cfg,pun),scad:statoScadenza(o,oggi),
-    reqMancanti:requisitiMancanti(o,input.ctx)}));
-  const stg={tipo:"stg",off:{id:"__stg",nome:"Servizio a Tutele Graduali",fornitore:"benchmark ARERA"},
-    b:CalcEngine.bolletta("stg",input,null,cfg,pun),scad:{stato:"nessuna",label:""},reqMancanti:[]};
-  const tutte=[...righe,stg].sort((a,b)=>a.b.totale-b.b.totale);
-  /* migliore = non scaduta E con requisiti obbligatori soddisfatti (sottoscrivibile) */
-  const best=tutte.find(r=>r.tipo==="ml"&&r.scad.stato!=="scaduta"&&!r.reqMancanti.length)||null;
-  /* benchmark selezionabile (pagina Benchmark): STG | Vulnerabili | una qualunque offerta */
-  const mtvOk=cfg.maggiorTutelaVulnerabili&&cfg.maggiorTutelaVulnerabili.ped_eur_kWh>0;
-  let bmId=localStorage.getItem("luceCheck.benchmark")||"__stg";
-  if(bmId==="__mtv"&&!mtvOk)bmId="__stg";
-  let benchmark;
-  if(bmId==="__mtv")
-    benchmark={id:"__mtv",nome:"Maggior Tutela Vulnerabili",tipo:"mtv",
-      b:CalcEngine.bolletta("mtv",input,null,cfg,pun)};
-  else if(bmId!=="__stg"&&righe.find(r=>r.off.id===bmId)){
-    const r=righe.find(x=>x.off.id===bmId);
-    benchmark={id:bmId,nome:r.off.nome,tipo:"ml",b:r.b,off:r.off};
-  }else benchmark={id:"__stg",nome:"Servizio a Tutele Graduali",tipo:"stg",b:stg.b};
-  return{tutte,best,stg,input,benchmark,mtvOk};
+    b:CalcEngine.bolletta("ml",input,o,cfg,pun,dis(o.id)),
+    scad:statoScadenza(o,oggi),regolato:false}));
+  righe.push({tipo:"stg",regolato:true,
+    off:{id:"__stg",nome:"Servizio a Tutele Graduali",fornitore:"ARERA"},
+    b:CalcEngine.bolletta("stg",input,null,cfg,pun),scad:{stato:"nessuna",label:""}});
+  const mtvCfg=cfg.maggiorTutelaVulnerabili;
+  const mtvOk=mtvCfg&&mtvCfg.materiaEnergia_eur_kWh&&mtvCfg.materiaEnergia_eur_kWh.monorario>0;
+  if(mtvOk)righe.push({tipo:"mtv",regolato:true,
+    off:{id:"__mtv",nome:"Maggior Tutela Vulnerabili",fornitore:"ARERA"},
+    b:CalcEngine.bolletta("mtv",input,null,cfg,pun),scad:{stato:"nessuna",label:""}});
+  const tutte=[...righe].sort((a,b)=>a.b.totale-b.b.totale);
+  /* migliore assoluta = totale minimo tra le voci sottoscrivibili (regolati inclusi) */
+  const best=tutte.find(r=>r.scad.stato!=="scaduta")||null;
+  /* colonne dello scontrino: selezione libera, persistita */
+  const trova=id=>tutte.find(r=>r.off.id===id)||null;
+  let idA=localStorage.getItem("luceCheck.colA"),idB=localStorage.getItem("luceCheck.colB");
+  let colA=trova(idA),colB=trova(idB);
+  if(!colA)colA=tutte.find(r=>!r.regolato)||tutte[0]||null;
+  if(!colB||colB===colA)colB=trova("__stg")!==colA?trova("__stg"):tutte.find(r=>r!==colA)||null;
+  return{tutte,best,input,colA,colB,mtvOk};
 }
-
 /* ================= Render ================= */
-function descrScontoBreve(r,div12){
-  const s=r.b.sconti;const parti=[];
-  const tot=s.preIVA+s.postIVA;
-  if(tot>0)parti.push(`−${eur(tot/div12)}`);
-  for(const i of s.ignorati)if(i.scontoSuLuce!==false||true){
-    const pot=i.motivo.startsWith("richiede")
-      ?`pot. −${eur(i.valore/div12)} (${i.motivo})`
-      :`sconto non su luce`;
-    parti.push(pot);
-  }
-  return parti.join(" · ");
-}
-/* colore stabile per fornitore (hash sul nome) */
 const PALETTE_FORN=["#0E7C7B","#B0553B","#3B5B8C","#7A6FB0","#A9741B","#4E7C3A","#96455E","#546A7B"];
 function coloreFornitore(nome){
   let h=0;for(const c of String(nome||"?"))h=(h*31+c.charCodeAt(0))>>>0;
   return PALETTE_FORN[h%PALETTE_FORN.length];
+}
+/* chip sconti/requisiti: UN chip per sconto (punto 16), UN chip per i requisiti */
+function chipsOfferta(o){
+  let h="";
+  const sconti=[];
+  if(o.scontoTipo&&o.scontoTipo!=="—")sconti.push(o);
+  if(Array.isArray(o.extra))for(const s of o.extra)if(s.scontoTipo!=="—")sconti.push(s);
+  for(const s of sconti){
+    if(s.scontoCond&&s.scontoCond!=="—")
+      h+=` <span class="badge sconto">sconto: richiede ${CONDIZIONI_LABEL[s.scontoCond]||s.scontoCond}</span>`;
+  }
+  if(Array.isArray(o.requisitoObbligatorio)&&o.requisitoObbligatorio.length)
+    h+=` <span class="badge reqok">Richiede ${o.requisitoObbligatorio
+      .map(r=>CONDIZIONI_LABEL[r]||r).join(" + ")}</span>`;
+  return h;
 }
 function renderLista(ris){
   const box=$("listaOfferte");box.innerHTML="";
   $("contaOfferte").textContent=offerte.length?offerte.length+" caricate":"nessuna";
   if(!offerte.length){box.innerHTML='<div class="nota">Nessuna offerta: aggiungine una o importa un XLSX.</div>';return;}
   const div12=stato.periodo==="mensile"?12:1;
-  for(const r of ris.tutte.filter(x=>x.tipo==="ml")){
+  for(const r of ris.tutte.filter(x=>!x.regolato)){
     const o=r.off,div=document.createElement("div");
     div.className="cardOff"+(r.scad.stato==="scaduta"?" scaduta":"")+(o.id===stato.editId?" sel":"");
     let badge="";
     if(ris.best&&o.id===ris.best.off.id)badge='<span class="badge best">MIGLIORE</span>';
     if(r.scad.stato==="scaduta")badge+='<span class="badge scad">SCADUTA</span>';
     else if(r.scad.stato==="inScadenza")badge+=` <span class="badge warn">${r.scad.label}</span>`;
-    if(r.b.sconti.attivi.length)badge+=' <span class="badge sconto">sconto attivo</span>';
-    for(const q of(o.requisitoObbligatorio||[]))
-      badge+=r.reqMancanti.includes(q)
-        ?` <span class="badge req">⚠ richiede ${CONDIZIONI_LABEL[q]||q} — non sottoscrivibile</span>`
-        :` <span class="badge reqok">richiede ${CONDIZIONI_LABEL[q]||q} ✓</span>`;
-    const scNote=descrScontoBreve(r,div12);
+    badge+=chipsOfferta(o);
     const col=coloreFornitore(o.fornitore);
     const iniziale=(o.fornitore||"?").trim().charAt(0).toUpperCase()||"?";
     div.innerHTML=`<div class="avatar" style="background:${col}">${iniziale}</div>
       <div class="corpo"><div class="nm">${o.nome}${badge}</div>
       <span class="forn" style="background:${col}">${o.fornitore||"fornitore n.d."}</span>
       <div class="dt">${o.tipoPrezzo==="fisso"?"fisso":"indicizzato "+o.indice}
-      · ${o.durataMesi} mesi ${r.scad.stato==="ok"?"· "+r.scad.label:""}</div>
-      ${scNote?`<div class="dt">${scNote}</div>`:""}</div>
+      · ${o.durataMesi} mesi ${r.scad.stato==="ok"?"· "+r.scad.label:""}</div></div>
       <div class="destra"><div class="tot mono">${eur(r.b.totale/div12)}</div>
       <div class="azioni"><button title="Modifica" data-az="mod" data-id="${o.id}">✎</button>
       <button title="Elimina" data-az="del" data-id="${o.id}">🗑</button></div></div>`;
@@ -1127,28 +1145,116 @@ function renderLista(ris){
     box.appendChild(div);
   }
 }
+/* card riepilogo: vincitore TRA LE DUE COLONNE selezionate (punto 11) */
 function renderVincitore(ris){
   const v=$("vincitore"),div12=stato.periodo==="mensile"?12:1;
-  if(!ris.best){
-    v.className="vuoto";
-    v.innerHTML=offerte.length
-      ?"Tutte le offerte caricate risultano scadute: nessuna migliore selezionabile."
-      :"Aggiungi almeno un'offerta per vedere la migliore.";
-    return;}
+  const per=div12===12?"mese":"anno";
+  if(!ris.colA||!ris.colB){v.className="vuoto";
+    v.textContent="Seleziona due voci da confrontare.";return;}
+  if(ris.colA===ris.colB){v.className="vuoto";
+    v.textContent="Le due colonne mostrano la stessa voce: selezionane due diverse.";return;}
   v.className="";
-  const b=ris.best.b,o=ris.best.off;
-  const seconda=ris.tutte.filter(r=>r.off.id!==o.id&&r.scad.stato!=="scaduta"
-    &&!r.reqMancanti.length)[0];
-  const dStg=b.totale-ris.benchmark.b.totale;
-  const sc=b.sconti.attivi.length
-    ?` · sconti applicati −${eur((b.sconti.preIVA+b.sconti.postIVA)/div12)}`:"";
+  const win=ris.colA.b.totale<=ris.colB.b.totale?ris.colA:ris.colB;
+  const lose=win===ris.colA?ris.colB:ris.colA;
+  const diff=lose.b.totale-win.b.totale;
   v.innerHTML=`<div><div class="titolo">Offerta più conveniente</div>
-    <div class="nome">${o.nome} <small>${o.fornitore||""}</small></div>
-    <small>${statoScadenza(o).label?("Sottoscrivibile "+statoScadenza(o).label):""}${sc}</small></div>
+    <div class="nome">${win.off.nome}
+    ${win.regolato?'<span class="badge info">Servizio regolato</span>':""}</div>
+    <small>Risparmi ${eur(diff/div12)}/${per} rispetto a ${lose.off.nome}</small></div>
     <div style="text-align:right">
-    <div class="cifra mono">${eur(b.totale/div12)}<small style="font-size:13px">/${div12===12?"mese":"anno"}</small></div>
-    <small>${seconda?`+${eur((seconda.b.totale-b.totale)/div12)} la seconda (${seconda.off.nome})`:""}
-    · ${dStg>=0?"+":"−"}${eur(Math.abs(dStg)/div12)} vs ${ris.benchmark.nome}</small></div>`;
+    <div class="cifra mono">${eur(win.b.totale/div12)}<small style="font-size:13px">/${per}</small></div></div>`;
+}
+/* ============ carta scontrino (mockup): macro-blocchi, formule inline, sconti con checkbox ============ */
+function renderCarta(lato,riga,ris){
+  const cont=$(lato==="A"?"cartaA":"cartaB");
+  const div12=stato.periodo==="mensile"?12:1,k=v=>eur(v/div12);
+  const nk=v=>Math.round(v).toLocaleString("it-IT");
+  const pz=(v,d)=>v.toLocaleString("it-IT",{minimumFractionDigits:d??4,maximumFractionDigits:d??4});
+  if(!riga){cont.innerHTML='<div class="nota" style="padding:20px 0">Nessuna voce selezionata.</div>';return;}
+  const cfg=TariffManager.config,b=riga.b,o=riga.off,det=stato.dettaglio[lato];
+  let selHtml=`<select data-col="${lato}" style="margin-bottom:4px">`;
+  for(const r of ris.tutte)
+    selHtml+=`<option value="${r.off.id}" ${r.off.id===o.id?"selected":""}>${r.off.nome}`+
+      `${r.regolato?" · Servizio regolato":""}${r.scad.stato==="scaduta"?" (scaduta)":""}</option>`;
+  selHtml+="</select>";
+  const mesiTxt=div12===12?"1 mese":"12 mesi";
+  const macro=(t,imp)=>`<div class="scMacro"><span>${t}</span><span class="imp mono">${imp}</span></div>`;
+  const dett=(formula,imp)=>det
+    ?`<div class="scDett"><span class="mono">${formula}</span><span class="imp mono">${imp}</span></div>`:"";
+  const macroFormula=(formula,imp)=>`<div class="scMacro"><span class="mono" style="font-weight:600;font-size:12.5px">${formula}</span><span class="imp mono">${imp}</span></div>`;
+  let h=`<div class="scTitolo">${selHtml}
+    <button data-dett="${lato}">${det?"Nascondi dettaglio":"Mostra dettaglio calcolo"}</button></div>`;
+  if(riga.scad.stato==="scaduta")h+='<div class="avviso err">Offerta SCADUTA: non più sottoscrivibile, mostrata solo per confronto.</div>';
+  h+=macro("Spesa materia energia",k(b.materia.totale));
+  if(b.materia.quotaFissa!==0)
+    h+=dett(`${mesiTxt} × ${pz(Math.abs(b.materia.quotaFissa)/12)} €/mese${b.materia.quotaFissa<0?" (parametro γ)":""}`,k(b.materia.quotaFissa));
+  for(const f of Object.keys(b.consumi.fasce)){
+    const d=b.materia.dettaglioFasce[f];
+    h+=dett(`${nk(d.kwh/div12)} kWh${f==="F0"?"":" "+f} × ${pz(d.prezzo,5)} €/kWh`,k(d.importo));
+  }
+  h+=macro("Trasporto e gestione contatore",k(b.rete.totale));
+  h+=dett(`${mesiTxt} × ${pz(cfg.rete.quotaFissa_eur_mese)} €/mese`,k(b.rete.quotaFissa));
+  h+=dett(`${ris.input.potenzaKw} kW × ${pz(cfg.rete.quotaPotenza_eur_kW_mese)} €/kW/mese × ${div12===12?1:12}`,k(b.rete.quotaPotenza));
+  h+=dett(`${nk(b.consumi.totale/div12)} kWh × ${pz(cfg.rete.quotaEnergia_eur_kWh,5)} €/kWh`,k(b.rete.quotaEnergia));
+  h+=macroFormula(`${nk(b.consumi.totale/div12)} kWh × ${pz(cfg.oneriSistema.quotaEnergia_eur_kWh,5)} €/kWh (oneri ASOS+ARIM)`,k(b.oneri.totale-b.oneri.quotaFissa));
+  if(b.oneri.quotaFissa>0)
+    h+=macroFormula(`quota fissa oneri non residente (forfait annuo)`,k(b.oneri.quotaFissa));
+  h+=macroFormula(b.accisa===0
+    ?`accisa: esente (residente ≤3 kW, ≤150 kWh/mese)`
+    :`${nk(b.accisa/cfg.imposte.accisa_eur_kWh/div12)} kWh × ${pz(cfg.imposte.accisa_eur_kWh)} €/kWh (accisa)`,k(b.accisa));
+  h+=macroFormula(`${eur(b.imponibile/div12)} × ${(cfg.imposte.iva*100).toFixed(0)}% (IVA)`,k(b.iva));
+  if(b.dispacciamento>0)
+    h+=macroFormula(`${nk(b.consumi.totale/div12)} kWh × ${pz(cfg.stg.dispacciamento_eur_kWh)} €/kWh (dispacciamento)`,k(b.dispacciamento));
+  const s=b.sconti,tutti=[...s.attivi,...s.disattivati];
+  if(tutti.length||s.nonLuce.length){
+    h+='<div class="scSconti"><div class="titoloSc">Sconti disponibili</div>';
+    for(const v of tutti.sort((a,c)=>a.key<c.key?-1:1)){
+      const attivo=s.attivi.includes(v);
+      h+=`<div class="rigaSc ${attivo?"":"off"}">`+
+        (v.obbligatorio?'<span style="width:15px;flex:none"></span>'
+          :`<input type="checkbox" data-off="${o.id}" data-key="${v.key}" ${attivo?"checked":""}>`)+
+        `<span>${v.label}</span>`+
+        `<span class="${v.obbligatorio?"tagObb":"tagOpz"}">${v.obbligatorio?"obbligatorio":"opzionale"}</span>`+
+        `<span class="imp mono">−${eur(v.valore/div12)}${v.fase==="post"?" (post-IVA)":""}</span></div>`;
+    }
+    for(const v of s.nonLuce)
+      h+=`<div class="rigaSc off"><span style="width:15px;flex:none"></span>`+
+        `<span>${v.label} — su altra fornitura, non conteggiato</span></div>`;
+    h+="</div>";
+  }
+  h+=`<div class="scTotale"><span>Totale ${div12===12?"mensile":"annuo"}</span>`+
+     `<span class="mono">${k(b.totale)}</span></div>`;
+  const meseP=$("punManuale")&&$("punManuale").checked?"manuale":$("mesePun").value;
+  const usaPun=riga.tipo!=="mtv";
+  h+=`<div class="scValori">Valori applicati (simulazione ${new Date().toLocaleDateString("it-IT")}): `+
+    `oneri ASOS+ARIM ${pz(cfg.oneriSistema.quotaEnergia_eur_kWh*100,4)} c€/kWh (${cfg.oneriSistema.fonte||"ARERA"}) · `+
+    `rete TD ${pz(cfg.rete.quotaFissa_eur_mese)} €/mese + ${pz(cfg.rete.quotaPotenza_eur_kW_mese)} €/kW/mese + ${pz(cfg.rete.quotaEnergia_eur_kWh,5)} €/kWh (${cfg.rete.fonte||"ARERA"})`+
+    (usaPun?` · PUN rif. ${meseP} (GME via fonti secondarie, vedi Fonti)`:"")+
+    (riga.tipo==="mtv"?` · materia energia ${pz(cfg.maggiorTutelaVulnerabili.materiaEnergia_eur_kWh.monorario*100,3)} c€/kWh, ${cfg.maggiorTutelaVulnerabili.periodoRiferimento||""} (${cfg.maggiorTutelaVulnerabili.fonte||"ARERA"})`:"")+
+    (riga.tipo==="stg"?` · γ ${eur(cfg.stg.parametroGamma_eur_pod_anno)}/POD/anno, dispacciamento ${pz(cfg.stg.dispacciamento_eur_kWh)} €/kWh (${cfg.stg.fonte||"ARERA"})`:"")+
+    ` · accisa ${pz(cfg.imposte.accisa_eur_kWh*100,2)} c€/kWh · IVA ${(cfg.imposte.iva*100).toFixed(0)}% (${cfg.imposte.fonte||"TUA/IVA"})</div>`;
+  cont.innerHTML=h;
+}
+/* torte: una per carta */
+let torte={A:null,B:null};
+function renderTortaCarta(lato,riga){
+  const canvas=$(lato==="A"?"tortaA":"tortaB");if(!canvas)return;
+  if(torte[lato]){torte[lato].destroy();torte[lato]=null;}
+  if(!riga)return;
+  const b=riga.b,div12=stato.periodo==="mensile"?12:1;
+  const dati={labels:["Materia energia (netto sconti)","Trasporto e gestione","Oneri di sistema","Imposte (accisa+IVA)"],
+    valori:[Math.max(b.materia.totale-b.sconti.preIVA,0)+b.dispacciamento,
+      b.rete.totale,b.oneri.totale,b.accisa+b.iva]};
+  const tot=dati.valori.reduce((a,x)=>a+x,0);
+  const css=getComputedStyle(document.documentElement);
+  torte[lato]=new Chart(canvas,{type:"doughnut",
+    data:{labels:dati.labels.map((l,i)=>`${l} (${(dati.valori[i]/tot*100).toFixed(1)}%)`),
+      datasets:[{data:dati.valori,
+        backgroundColor:[css.getPropertyValue("--ml").trim(),"#5B8DB8","#E8A013","#8A93A0"],
+        borderColor:css.getPropertyValue("--pann").trim(),borderWidth:3}]},
+    options:{plugins:{legend:{position:"bottom",labels:{boxWidth:12,font:{size:10.5},
+      color:css.getPropertyValue("--inchiostro").trim()}},
+      tooltip:{callbacks:{label:c=>` ${eur(c.parsed/div12)}`}}}}});
 }
 function renderTabella(ris){
   const div12=stato.periodo==="mensile"?12:1,k=v=>eur(v/div12);
@@ -1157,20 +1263,19 @@ function renderTabella(ris){
     <th>Scadenza</th></tr>`;
   const bestTot=ris.best?ris.best.b.totale:null;
   for(const r of ris.tutte){
-    const b=r.b,cls=[r.tipo==="stg"?"stg":"",
+    const b=r.b,cls=[r.regolato?"stg":"",
       ris.best&&r.off.id===ris.best.off.id?"best":"",
       r.scad.stato==="scaduta"?"scaduta":""].join(" ");
     const scTot=b.sconti.preIVA+b.sconti.postIVA;
-    const scPot=b.sconti.ignorati.filter(i=>i.motivo.startsWith("richiede"))
-      .reduce((a,i)=>a+i.valore,0);
+    const scOff=b.sconti.disattivati.reduce((a,v)=>a+v.valore,0);
     const scTxt=scTot>0?("−"+eur(scTot/div12))
-      :(scPot>0?`<span class="nota">pot. −${eur(scPot/div12)}</span>`:"—");
-    const delta=bestTot===null?"—":(ris.best&&r.off.id===ris.best.off.id?"—"
-      :(b.totale>=bestTot?"+":"−")+eur(Math.abs(b.totale-bestTot)/div12));
-    const scad=r.scad.stato==="scaduta"?'<span class="badge scad">SCADUTA</span>'
+      :(scOff>0?`<span class="nota">esclusi −${eur(scOff/div12)}</span>`:"—");
+    const delta=bestTot===null||r.off.id===(ris.best&&ris.best.off.id)?"—"
+      :(b.totale>=bestTot?"+":"−")+eur(Math.abs(b.totale-bestTot)/div12);
+    const scad=r.regolato?"—":r.scad.stato==="scaduta"?'<span class="badge scad">SCADUTA</span>'
       :r.scad.stato==="inScadenza"?`<span class="badge warn">${r.scad.label}</span>`
       :r.scad.label||"—";
-    h+=`<tr class="${cls}"><td>${r.off.nome}</td>
+    h+=`<tr class="${cls}"><td>${r.off.nome}${r.regolato?' <span class="badge info">Servizio regolato</span>':""}</td>
       <td class="mono">${k(b.materia.totale)}</td><td class="mono">${scTxt}</td>
       <td class="mono">${k(b.dispacciamento)}</td>
       <td class="mono">${k(b.rete.totale)}</td><td class="mono">${k(b.oneri.totale)}</td>
@@ -1178,140 +1283,6 @@ function renderTabella(ris){
       <td class="mono">${delta}</td><td>${scad}</td></tr>`;
   }
   $("tabRanking").innerHTML=h;
-}
-function renderScontrino(ris){
-  const sel=$("selScontrino");sel.innerHTML="";
-  const mlRighe=ris.tutte.filter(r=>r.tipo==="ml");
-  for(const r of mlRighe){
-    const o=document.createElement("option");
-    o.value=r.off.id;o.textContent=r.off.nome+(r.scad.stato==="scaduta"?" (scaduta)":"");
-    sel.appendChild(o);
-  }
-  const div12=stato.periodo==="mensile"?12:1,k=v=>eur(v/div12);
-  const cfg=TariffManager.config;
-  if(!mlRighe.length){
-    $("scTitoloML").textContent="—";$("scSottoML").textContent="";
-    $("scTabella").innerHTML='<div class="nota">Nessuna offerta caricata.</div>';
-    $("scSottoSTG").textContent="";return;
-  }
-  if(!stato.scontrinoId||!mlRighe.find(r=>r.off.id===stato.scontrinoId))
-    stato.scontrinoId=ris.best?ris.best.off.id:mlRighe[0].off.id;
-  sel.value=stato.scontrinoId;
-  const r=mlRighe.find(x=>x.off.id===stato.scontrinoId);if(!r)return;
-  const o=r.off,ml=r.b,bm=ris.benchmark.b;
-  const nk=v=>Math.round(v).toLocaleString("it-IT");
-  const pz=v=>v.toLocaleString("it-IT",{minimumFractionDigits:4,maximumFractionDigits:5});
-  $("scTitoloML").textContent=o.nome;
-  $("scTitoloBM").textContent=ris.benchmark.nome;
-  $("scSottoML").textContent="◼ "+o.nome+" — "+(o.fornitore||"")+" · "
-    +(o.tipoPrezzo==="fisso"?"prezzo fisso"
-      :`${o.indice} + ${pz(o.p0)} €/kWh`)
-    +` · QF ${eur(o.quotaFissa)}/anno · ${o.prezzoConPerdite?"perdite incluse":"perdite "+(o.perdite*100).toFixed(1)+"%"}`;
-  $("scSottoSTG").textContent="◼ "+ris.benchmark.nome+" — "
-    +(ris.benchmark.tipo==="stg"
-      ?`PUN ex post + dispacciamento · γ ${eur(cfg.stg.parametroGamma_eur_pod_anno)}/POD/anno · perdite ${(cfg.stg.perditeRete*100).toFixed(1)}%`
-      :ris.benchmark.tipo==="mtv"?"PED comprensivo di perdite e dispacciamento (TIV)"
-      :"offerta di riferimento scelta nella pagina Benchmark");
-  /* cella: importo + riga quantita' x prezzo */
-  const cella=(imp,qxp)=>`<span class="imp mono">${imp}</span>`+(qxp?`<span class="qxp mono">${qxp}</span>`:"");
-  const riga=(etic,cMl,cBm,cls)=>`<div class="scRiga ${cls||""}"><div class="etic">${etic}</div>`+
-    `<div class="v">${cMl}</div><div class="v">${cBm}</div></div>`;
-  /* dettagli sconto per lato: totali applicati (verdi) e opzionali (grigi, "se applicato") */
-  const scontiLato=b=>{
-    const pot=b.sconti.ignorati.filter(i=>i.motivo.startsWith("richiede"));
-    return{app:b.sconti.preIVA,pot:pot.reduce((a,i)=>a+i.valore,0),
-      appNomi:b.sconti.attivi.map(s=>CONDIZIONI_LABEL[s.scontoCond]||s.scontoTipo).join(", "),
-      potNomi:pot.map(i=>i.motivo.replace("richiede ","")).join(", ")};
-  };
-  const sMl=scontiLato(ml),sBm=scontiLato(bm);
-  let h="";
-  h+=riga("Spesa materia energia",cella(k(ml.materia.totale)),cella(k(bm.materia.totale)));
-  h+=riga("Quota fissa / commercializzazione",
-    cella(k(ml.materia.quotaFissa),`${div12===12?"1 mese":"12 mesi"} × ${pz(Math.abs(ml.materia.quotaFissa)/12)} €/mese`),
-    cella(k(bm.materia.quotaFissa),`${div12===12?"1 mese":"12 mesi"} × ${pz(Math.abs(bm.materia.quotaFissa)/12)} €/mese`),"sub");
-  for(const f of Object.keys(ml.consumi.fasce)){
-    const dMl=ml.materia.dettaglioFasce[f],dBm=bm.materia.dettaglioFasce[f];
-    const q=nk(dMl.kwh/div12);
-    h+=riga(`Energia ${f==="F0"?"":f}`,
-      cella(k(dMl.importo),`${q} kWh × ${pz(dMl.prezzo)} €/kWh`),
-      cella(k(dBm.importo),`${q} kWh × ${pz(dBm.prezzo)} €/kWh`),"sub");
-  }
-  if(sMl.app>0||sBm.app>0)
-    h+=riga("Sconti applicati (pre-IVA)",
-      sMl.app>0?cella("−"+eur(sMl.app/div12),sMl.appNomi):cella("—"),
-      sBm.app>0?cella("−"+eur(sBm.app/div12),sBm.appNomi):cella("—"),"sconto");
-  if(sMl.pot>0||sBm.pot>0)
-    h+=riga("Sconti opzionali non attivi",
-      sMl.pot>0?cella("se applicato: −"+eur(sMl.pot/div12),"con "+sMl.potNomi):cella("—"),
-      sBm.pot>0?cella("se applicato: −"+eur(sBm.pot/div12),"con "+sBm.potNomi):cella("—"),"grigia");
-  const dispQxp=(b,off)=>b.dispacciamento===0
-    ?(off&&off.dispIncluso?"incluso nel prezzo":"incluso nel PED")
-    :`${nk(b.consumi.totale/div12)} kWh × ${pz(cfg.stg.dispacciamento_eur_kWh)} €/kWh`;
-  h+=riga("Dispacciamento",
-    cella(k(ml.dispacciamento),dispQxp(ml,o)),
-    cella(k(bm.dispacciamento),dispQxp(bm,ris.benchmark.off)));
-  h+=riga("Trasporto e gestione contatore",cella(k(ml.rete.totale)),cella(k(bm.rete.totale)));
-  const mesi=div12===12?"1 mese":"12 mesi";
-  h+=riga("Quota fissa",
-    cella(k(ml.rete.quotaFissa),`${mesi} × ${pz(cfg.rete.quotaFissa_eur_mese)} €/mese`),
-    cella(k(bm.rete.quotaFissa),`${mesi} × ${pz(cfg.rete.quotaFissa_eur_mese)} €/mese`),"sub");
-  const inp=ris.input;
-  h+=riga("Quota potenza",
-    cella(k(ml.rete.quotaPotenza),`${inp.potenzaKw} kW × ${pz(cfg.rete.quotaPotenza_eur_kW_mese)} €/kW/mese × ${mesi.split(" ")[0]}`),
-    cella(k(bm.rete.quotaPotenza),`${inp.potenzaKw} kW × ${pz(cfg.rete.quotaPotenza_eur_kW_mese)} €/kW/mese × ${mesi.split(" ")[0]}`),"sub");
-  h+=riga("Quota energia",
-    cella(k(ml.rete.quotaEnergia),`${nk(ml.consumi.totale/div12)} kWh × ${pz(cfg.rete.quotaEnergia_eur_kWh)} €/kWh`),
-    cella(k(bm.rete.quotaEnergia),`${nk(bm.consumi.totale/div12)} kWh × ${pz(cfg.rete.quotaEnergia_eur_kWh)} €/kWh`),"sub");
-  const oneriQxp=b=>`${nk(b.consumi.totale/div12)} kWh × ${pz(cfg.oneriSistema.quotaEnergia_eur_kWh)} €/kWh`;
-  h+=riga("Oneri di sistema (ASOS+ARIM)",cella(k(ml.oneri.totale),oneriQxp(ml)),cella(k(bm.oneri.totale),oneriQxp(bm)));
-  if(ml.oneri.quotaFissa>0)
-    h+=riga("Quota fissa oneri (non residente)",
-      cella(k(ml.oneri.quotaFissa),"forfait annuo"),
-      cella(k(bm.oneri.quotaFissa),"forfait annuo"),"sub");
-  const accisaQxp=b=>b.accisa===0?"esente (residente ≤3 kW, ≤150 kWh/mese)"
-    :`${nk(b.accisa/cfg.imposte.accisa_eur_kWh/div12)} kWh × ${pz(cfg.imposte.accisa_eur_kWh)} €/kWh`;
-  h+=riga("Accisa",cella(k(ml.accisa),accisaQxp(ml)),cella(k(bm.accisa),accisaQxp(bm)));
-  h+=riga("IVA 10%",
-    cella(k(ml.iva),`${eur(ml.imponibile/div12)} × 10%`),
-    cella(k(bm.iva),`${eur(bm.imponibile/div12)} × 10%`));
-  if(ml.sconti.postIVA>0||bm.sconti.postIVA>0)
-    h+=riga("Bonus una tantum (post-IVA)",
-      ml.sconti.postIVA>0?cella("−"+eur(ml.sconti.postIVA/div12)):cella("—"),
-      bm.sconti.postIVA>0?cella("−"+eur(bm.sconti.postIVA/div12)):cella("—"),"sconto");
-  h+=riga("Totale "+(div12===12?"mensile":"annuo"),
-    cella(k(ml.totale)),cella(k(bm.totale)),"tot");
-  $("scTabella").innerHTML=h;
-}
-
-function renderTorta(ris){
-  const sel=$("selTorta");sel.innerHTML="";
-  for(const r of ris.tutte){
-    const o=document.createElement("option");
-    o.value=r.off.id;o.textContent=r.off.nome+(r.scad.stato==="scaduta"?" (scaduta)":"");
-    sel.appendChild(o);
-  }
-  if(!stato.tortaId||!ris.tutte.find(r=>r.off.id===stato.tortaId))
-    stato.tortaId=ris.best?ris.best.off.id:"__stg";
-  sel.value=stato.tortaId;
-  const r=ris.tutte.find(x=>x.off.id===stato.tortaId);if(!r)return;
-  const b=r.b,div12=stato.periodo==="mensile"?12:1;
-  const dati={labels:["Materia energia (netto sconti)","Trasporto e gestione","Oneri di sistema","Imposte (accisa+IVA)"],
-    valori:[Math.max(b.materia.totale-b.sconti.preIVA,0)+b.dispacciamento,
-      b.rete.totale,b.oneri.totale,b.accisa+b.iva]};
-  const tot=dati.valori.reduce((a,x)=>a+x,0);
-  if(grafico)grafico.destroy();
-  const css=getComputedStyle(document.documentElement);
-  const colTesto=css.getPropertyValue("--inchiostro").trim();
-  const colBordo=css.getPropertyValue("--pann").trim();
-  grafico=new Chart($("torta"),{type:"doughnut",
-    data:{labels:dati.labels.map((l,i)=>`${l} (${(dati.valori[i]/tot*100).toFixed(1)}%)`),
-      datasets:[{data:dati.valori,
-        backgroundColor:["#C0504A","#5B8DB8","#E8A013","#8A93A0"],
-        borderColor:colBordo,borderWidth:3}]},
-    options:{plugins:{legend:{position:"bottom",labels:{boxWidth:14,font:{size:12},color:colTesto}},
-      tooltip:{callbacks:{label:c=>` ${eur(c.parsed/div12)}`}}}}});
-  $("notaTorta").textContent=b.sconti.postIVA>0
-    ?`Il credito post-IVA (−${eur(b.sconti.postIVA/div12)}) non è nel grafico: riduce il totale fatturato.`:"";
 }
 let graficoPun=null;
 function renderPun(){
@@ -1335,25 +1306,24 @@ function renderPun(){
     options:{plugins:{legend:{labels:{color:colTesto,boxWidth:14,font:{size:11}}},
       tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toLocaleString("it-IT",{minimumFractionDigits:4})} €/kWh`}}},
       scales:{x:{ticks:{color:colTesto},grid:{color:colGriglia}},
-        y:{ticks:{color:colTesto,callback:v=>v.toFixed(3)},grid:{color:colGriglia}}}}});
-}
-function renderBenchmarkUI(ris){
-  const sel=$("selBenchmark");if(!sel)return;
-  sel.innerHTML="";
-  const opzioni=[["__stg","Servizio a Tutele Graduali (regolato)"]];
-  if(ris.mtvOk)opzioni.push(["__mtv","Maggior Tutela Vulnerabili (regolato)"]);
-  for(const o of offerte)opzioni.push([o.id,o.nome+" — "+(o.fornitore||"")]);
-  for(const[v,t]of opzioni){
-    const e=document.createElement("option");e.value=v;e.textContent=t;sel.appendChild(e);}
-  sel.value=ris.benchmark.id;
-  $("notaBenchmark").textContent=ris.mtvOk?""
-    :"Maggior Tutela Vulnerabili non selezionabile: compilare i valori PED in "+
-     "config_tariffe.json (blocco maggiorTutelaVulnerabili, fonte E2026-smt.xlsx).";
+        y:{beginAtZero:true,ticks:{color:colTesto,callback:v=>v.toFixed(3)},grid:{color:colGriglia}}}}});
 }
 function aggiorna(){
   const ris=calcolaTutto();
-  renderLista(ris);renderVincitore(ris);renderScontrino(ris);renderTabella(ris);
-  renderTorta(ris);renderPun();renderBenchmarkUI(ris);
+  renderLista(ris);renderVincitore(ris);
+  renderCarta("A",ris.colA,ris);renderCarta("B",ris.colB,ris);
+  renderTortaCarta("A",ris.colA);renderTortaCarta("B",ris.colB);
+  renderTabella(ris);renderPun();
+  document.querySelectorAll("select[data-col]").forEach(s=>s.onchange=()=>{
+    localStorage.setItem("luceCheck.col"+s.dataset.col,s.value);aggiorna();});
+  document.querySelectorAll("button[data-dett]").forEach(bt=>bt.onclick=()=>{
+    stato.dettaglio[bt.dataset.dett]=!stato.dettaglio[bt.dataset.dett];aggiorna();});
+  document.querySelectorAll(".scSconti input[data-off]").forEach(cb=>cb.onchange=()=>{
+    const id=cb.dataset.off;
+    if(!stato.scontiDisattivati[id])stato.scontiDisattivati[id]=new Set();
+    if(cb.checked)stato.scontiDisattivati[id].delete(cb.dataset.key);
+    else stato.scontiDisattivati[id].add(cb.dataset.key);
+    aggiorna();});
 }
 /* ---- navigazione a pagine (sidebar) ---- */
 function mostraPagina(pg){
@@ -1475,18 +1445,17 @@ function copiaTab(){
   const per=div12===12?"mensile":"annuo";
   const righe=[["Offerta","Fornitore","Tipo prezzo","Indice","Durata mesi",
     `Spesa materia energia ${per} (EUR)`,`Sconti applicati ${per} (EUR)`,
-    `Sconti potenziali non attivi ${per} (EUR)`,`Dispacciamento ${per} (EUR)`,
+    `Sconti deselezionati ${per} (EUR)`,`Dispacciamento ${per} (EUR)`,
     `Trasporto e gestione contatore ${per} (EUR)`,`Oneri di sistema ${per} (EUR)`,
     `Imposte accisa e IVA ${per} (EUR)`,`Totale ${per} (EUR)`,
     "Differenza vs migliore (EUR)","Scadenza sottoscrivibilita","Stato","Note CGF"].join("\t")];
   const bestTot=ris.best?ris.best.b.totale:null;
   for(const r of ris.tutte){
     const b=r.b;
-    const scPot=b.sconti.ignorati.filter(i=>i.motivo.startsWith("richiede"))
-      .reduce((a,i)=>a+i.valore,0);
+    const scPot=b.sconti.disattivati.reduce((a,v)=>a+v.valore,0);
     righe.push([r.off.nome,r.off.fornitore||"",
-      r.tipo==="stg"?"regolato STG":r.off.tipoPrezzo,
-      r.tipo==="stg"?"PUN":(r.off.indice||"—"),r.tipo==="stg"?"":r.off.durataMesi,
+      r.regolato?"servizio regolato":r.off.tipoPrezzo,
+      r.regolato?"—":(r.off.indice||"—"),r.regolato?"":r.off.durataMesi,
       n(b.materia.totale),n(b.sconti.preIVA+b.sconti.postIVA),n(scPot),
       n(b.dispacciamento),n(b.rete.totale),n(b.oneri.totale),
       n(b.accisa+b.iva),n(b.totale),
@@ -1626,12 +1595,13 @@ async function estraiPdf(file){
     const usato=NOME_MODELLO[data.modelUsato]||data.modelUsato||"";
     $("statoPdf").innerHTML='Estrazione completata'+(usato
       ?' <span class="badge info">estratto con '+usato+'</span>':"")+': verifica e conferma.';
+    mostraPagina("pgOfferte");
     apriFormEstrazione(data.offerta,data.goldenPoints,data.warnings);
   }catch(e){
     $("statoPdf").textContent="";
     alert("Estrazione non riuscita: "+e.message+
       "\n\nPuoi comunque inserire l'offerta a mano: apro il form vuoto.");
-    apriForm(null);
+    mostraPagina("pgOfferte");apriForm(null);
   }
 }
 /* sincronizza pulsante PDF, switch e segmented con lo stato salvato */
@@ -1663,8 +1633,8 @@ function wiring(){
   aggiornaWorkerUI();
   $("btPdf").onclick=()=>{
     if(!WorkerSettings.enabled()){
-      alert("Estrazione CTE disattivata — attivala in Impostazioni estrazione CTE.");
-      $("detWorker").open=true;return;}
+      alert("Estrazione CTE disattivata — attivala nella pagina Configurazione estrazione CTE (icona 🤖).");
+      mostraPagina("pgEstrazione");return;}
     $("filePdf").click();};
   $("filePdf").onchange=e=>{if(e.target.files[0])estraiPdf(e.target.files[0]);e.target.value="";};
   $("setWorkerUrl").value=WorkerSettings.url();
@@ -1675,10 +1645,9 @@ function wiring(){
   $("btCopiaGolden").onclick=()=>{
     navigator.clipboard.writeText($("goldenPre").textContent).then(
       ()=>alert("Golden points copiati."),()=>alert("Copia bloccata dal browser."));};
-  $("selScontrino").onchange=()=>{stato.scontrinoId=$("selScontrino").value;aggiorna();};
   document.querySelectorAll("#sidebar button").forEach(b=>b.onclick=()=>mostraPagina(b.dataset.pg));
-  $("selBenchmark").onchange=()=>{
-    localStorage.setItem("luceCheck.benchmark",$("selBenchmark").value);aggiorna();};
+  document.querySelectorAll(".vaiFonti").forEach(a=>a.onclick=e=>{
+    e.preventDefault();mostraPagina("pgFonti");});
   document.querySelectorAll("#tgPeriodo button").forEach(b=>b.onclick=()=>{
     const nuovo=b.dataset.v;
     if(nuovo!==stato.periodo){
@@ -1715,7 +1684,6 @@ function wiring(){
   $("btJsonOut").onclick=esportaJson;
   $("btJsonIn").onclick=()=>$("fileJson").click();
   $("fileJson").onchange=e=>{if(e.target.files[0])importaJson(e.target.files[0]);e.target.value="";};
-  $("selTorta").onchange=()=>{stato.tortaId=$("selTorta").value;aggiorna();};
   $("btIncolla").onclick=()=>$("dlgCte").showModal();
   $("btChiudiDlg").onclick=()=>$("dlgCte").close();
   $("btAnalizza").onclick=()=>{
