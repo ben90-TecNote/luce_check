@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Luce Check — Comparatore CTE vs STG</title>
+<title>Luce Check — Comparatore</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -203,7 +203,24 @@ tr.scaduta td:first-child{text-decoration:none}
 .scTotale{display:flex;justify-content:space-between;align-items:baseline;
   border-top:3px solid var(--inchiostro);margin-top:10px;padding:8px 9px 2px;
   font-size:16px;font-weight:800}
-.scValori{font-size:10.5px;color:var(--grigio);padding:6px 9px 10px;line-height:1.45}
+.scValori{font-size:10.5px;color:var(--grigio);padding:6px 9px 10px;line-height:1.4}
+.scValori .vTitolo{font-weight:800;color:var(--inchiostro);font-size:10.5px;
+  text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px}
+.scValori .vRiga{display:flex;justify-content:space-between;gap:10px;
+  align-items:baseline;margin-top:5px}
+.scValori .vRiga .vEt{font-weight:700;color:var(--inchiostro);flex:none}
+.scValori .vRiga .vVal{color:var(--inchiostro);text-align:right}
+.scValori .vFonte{font-size:9.5px;color:var(--grigio);padding-left:1px;margin-top:1px;font-style:italic}
+.scFormula{margin-top:10px;padding:8px 9px;background:var(--tinta);border-radius:6px;
+  border:1px dashed var(--linea);font-size:11px}
+.scFormula .fTit{font-weight:800;font-size:10px;text-transform:uppercase;letter-spacing:.03em;
+  color:var(--accento);margin-bottom:4px}
+.scFormula .fRiga{color:var(--inchiostro);line-height:1.4;margin-top:2px}
+.scFormula .fRiga .fEt{font-weight:700}
+.scFormula .fTot{font-weight:800;margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid var(--linea)}
+.scFormula .fSub{padding-left:12px;color:var(--grigio)}
+.qTag{display:inline-block;min-width:20px;color:var(--accento);font-weight:800;font-size:10px}
+.scDett .qTag{margin-right:2px}
 .wrapTortina{max-width:300px;margin:0 auto}
 /* dettaglio scontrino (legacy tabella unificata) */
 .scontrinoCarta{background:var(--input);padding:10px 14px;border-left:1px solid var(--linea);
@@ -257,9 +274,9 @@ footer{max-width:1280px;margin:26px auto 0;padding:0 20px;font-size:11.5px;color
 <body>
 
 <nav id="sidebar">
-  <button data-pg="pgScontrino" class="attivo" title="Dettaglio scontrino e classifica">🧾</button>
   <button data-pg="pgProfilo" title="Profilo di consumo">👤</button>
   <button data-pg="pgOfferte" title="Le mie offerte">🗂️</button>
+  <button data-pg="pgScontrino" class="attivo" title="Dettaglio scontrino e classifica">🧾</button>
   <button data-pg="pgFonti" title="Fonti ARERA">📚</button>
   <button data-pg="pgAggiorna" title="Come aggiornare i dati">🔄</button>
   <button data-pg="pgEstrazione" title="Configurazione estrazione CTE">🤖</button>
@@ -286,9 +303,9 @@ footer{max-width:1280px;margin:26px auto 0;padding:0 20px;font-size:11.5px;color
   </div>
 
   <div class="dueCarte">
-    <section class="blocco"><h2 class="sez">Composizione — colonna sinistra</h2>
+    <section class="blocco"><h2 class="sez" id="titComposA">Composizione</h2>
       <div class="wrapTortina"><canvas id="tortaA"></canvas></div></section>
-    <section class="blocco"><h2 class="sez">Composizione — colonna destra</h2>
+    <section class="blocco"><h2 class="sez" id="titComposB">Composizione</h2>
       <div class="wrapTortina"><canvas id="tortaB"></canvas></div></section>
   </div>
 
@@ -551,15 +568,19 @@ footer{max-width:1280px;margin:26px auto 0;padding:0 20px;font-size:11.5px;color
 /* ================= FALLBACK EMBED ================= */
 const CONFIG_FALLBACK={meta:{versione:"2026-Q3",validoDal:"2026-07-01",validoAl:"2026-09-30",
   fonte:"ARERA del. 219/2026, 227/2026, 575/2025 (fallback embed)"},
- rete:{quotaFissa_eur_mese:1.92,quotaPotenza_eur_kW_mese:1.9766,quotaEnergia_eur_kWh:0.01473},
- oneriSistema:{quotaEnergia_eur_kWh:0.033153,quotaFissaNonResidente_eur_anno:95.09},
+ rete:{quotaFissa_eur_mese:1.92,quotaPotenza_eur_kW_mese:1.9766,quotaEnergia_eur_kWh:0.01473,
+   fonte:"ARERA · del. 575/2025/R/eel · Tariffa TD (σ1+σ2+σ3, UC3, UC6)"},
+ oneriSistema:{quotaEnergia_eur_kWh:0.033153,asos_eur_kWh:0.031515,arim_eur_kWh:0.001638,
+   quotaFissaNonResidente_eur_anno:95.09,fonte:"ARERA · del. 227/2026/R/com"},
  stg:{parametroGamma_eur_pod_anno:-72.65,dispacciamento_eur_kWh:0.013,
-   dispacciamentoPerditeIncluse:true,cpstgd_eur_kWh:0,perditeRete:0.102},
+   dispacciamentoPerditeIncluse:true,cpstgd_eur_kWh:0,perditeRete:0.102,
+   fonte:"ARERA · servizio a tutele graduali"},
  maggiorTutelaVulnerabili:{periodoRiferimento:"1 luglio - 30 settembre 2026",
    materiaEnergia_eur_kWh:{monorario:0.16913,F1:0.15977,F23:0.1741},
    fonte:"Condizioni Maggior Tutela vulnerabili — ARERA (fallback embed)"},
  imposte:{accisa_eur_kWh:0.0227,
-   esenzioneResidente:{kWhMese:150,potenzaMax_kW:3,sogliaRecupero_kWhMese:220},iva:0.10}};
+   esenzioneResidente:{kWhMese:150,potenzaMax_kW:3,sogliaRecupero_kWhMese:220},iva:0.10,
+   fonte:"TUA, Tabella A punto 13"}};
 const PUN_FALLBACK={meta:{fonte:"fallback embed",ultimoAggiornamento:"2026-07-11"},
  mesi:{"2026-05":{F0:0.111,F1:0.118,F2:0.114,F3:0.101}}};
 
@@ -1170,6 +1191,7 @@ function renderCarta(lato,riga,ris){
   const div12=stato.periodo==="mensile"?12:1,k=v=>eur(v/div12);
   const nk=v=>Math.round(v).toLocaleString("it-IT");
   const pz=(v,d)=>v.toLocaleString("it-IT",{minimumFractionDigits:d??4,maximumFractionDigits:d??4});
+  const pk=v=>v.toLocaleString("it-IT",{minimumFractionDigits:2,maximumFractionDigits:6});
   if(!riga){cont.innerHTML='<div class="nota" style="padding:20px 0">Nessuna voce selezionata.</div>';return;}
   const cfg=TariffManager.config,b=riga.b,o=riga.off,det=stato.dettaglio[lato];
   let selHtml=`<select data-col="${lato}" style="margin-bottom:4px">`;
@@ -1182,29 +1204,43 @@ function renderCarta(lato,riga,ris){
   const dett=(formula,imp)=>det
     ?`<div class="scDett"><span class="mono">${formula}</span><span class="imp mono">${imp}</span></div>`:"";
   const macroFormula=(formula,imp)=>`<div class="scMacro"><span class="mono" style="font-weight:600;font-size:12.5px">${formula}</span><span class="imp mono">${imp}</span></div>`;
+  const qt=(tag,rest)=>`<b class="qTag">${tag}</b> ${rest}`;
   let h=`<div class="scTitolo">${selHtml}
     <button data-dett="${lato}">${det?"Nascondi dettaglio":"Mostra dettaglio calcolo"}</button></div>`;
   if(riga.scad.stato==="scaduta")h+='<div class="avviso err">Offerta SCADUTA: non più sottoscrivibile, mostrata solo per confronto.</div>';
-  h+=macro("Spesa materia energia",k(b.materia.totale));
+  /* ARERA — 4 macro-voci: materia energia · trasporto e contatore · oneri di sistema · imposte.
+     In vista compatta si vedono solo i 4 totali; il dettaglio compare con "Mostra dettaglio". */
+  // 1) Spesa materia energia (dispacciamento incluso: ARERA lo colloca nei servizi di vendita)
+  h+=macro("Spesa materia energia",k(b.materia.totale+b.dispacciamento));
   if(b.materia.quotaFissa!==0)
-    h+=dett(`${mesiTxt} × ${pz(Math.abs(b.materia.quotaFissa)/12)} €/mese${b.materia.quotaFissa<0?" (parametro γ)":""}`,k(b.materia.quotaFissa));
+    h+=dett(qt("QF",`${mesiTxt} × ${pz(Math.abs(b.materia.quotaFissa)/12)} €/mese${b.materia.quotaFissa<0?" · parametro γ":""}`),k(b.materia.quotaFissa));
   for(const f of Object.keys(b.consumi.fasce)){
     const d=b.materia.dettaglioFasce[f];
-    h+=dett(`${nk(d.kwh/div12)} kWh${f==="F0"?"":" "+f} × ${pz(d.prezzo,5)} €/kWh`,k(d.importo));
+    h+=dett(qt("QE",`${nk(d.kwh/div12)} kWh${f==="F0"?"":" "+f} × ${pz(d.prezzo,5)} €/kWh`),k(d.importo));
   }
-  h+=macro("Trasporto e gestione contatore",k(b.rete.totale));
-  h+=dett(`${mesiTxt} × ${pz(cfg.rete.quotaFissa_eur_mese)} €/mese`,k(b.rete.quotaFissa));
-  h+=dett(`${ris.input.potenzaKw} kW × ${pz(cfg.rete.quotaPotenza_eur_kW_mese)} €/kW/mese × ${div12===12?1:12}`,k(b.rete.quotaPotenza));
-  h+=dett(`${nk(b.consumi.totale/div12)} kWh × ${pz(cfg.rete.quotaEnergia_eur_kWh,5)} €/kWh`,k(b.rete.quotaEnergia));
-  h+=macroFormula(`${nk(b.consumi.totale/div12)} kWh × ${pz(cfg.oneriSistema.quotaEnergia_eur_kWh,5)} €/kWh (oneri ASOS+ARIM)`,k(b.oneri.totale-b.oneri.quotaFissa));
-  if(b.oneri.quotaFissa>0)
-    h+=macroFormula(`quota fissa oneri non residente (forfait annuo)`,k(b.oneri.quotaFissa));
-  h+=macroFormula(b.accisa===0
-    ?`accisa: esente (residente ≤3 kW, ≤150 kWh/mese)`
-    :`${nk(b.accisa/cfg.imposte.accisa_eur_kWh/div12)} kWh × ${pz(cfg.imposte.accisa_eur_kWh)} €/kWh (accisa)`,k(b.accisa));
-  h+=macroFormula(`${eur(b.imponibile/div12)} × ${(cfg.imposte.iva*100).toFixed(0)}% (IVA)`,k(b.iva));
   if(b.dispacciamento>0)
-    h+=macroFormula(`${nk(b.consumi.totale/div12)} kWh × ${pz(cfg.stg.dispacciamento_eur_kWh)} €/kWh (dispacciamento)`,k(b.dispacciamento));
+    h+=dett(qt("QE",`${nk(b.consumi.totale/div12)} kWh × ${pk(cfg.stg.dispacciamento_eur_kWh)} €/kWh · dispacciamento`),k(b.dispacciamento));
+  // 2) Spesa trasporto e gestione contatore
+  h+=macro("Trasporto e gestione contatore",k(b.rete.totale));
+  h+=dett(qt("QF",`${mesiTxt} × ${pz(cfg.rete.quotaFissa_eur_mese)} €/mese`),k(b.rete.quotaFissa));
+  h+=dett(qt("QP",`${ris.input.potenzaKw} kW × ${pz(cfg.rete.quotaPotenza_eur_kW_mese)} €/kW/mese × ${div12===12?"1 mese":"12 mesi"}`),k(b.rete.quotaPotenza));
+  h+=dett(qt("QE",`${nk(b.consumi.totale/div12)} kWh × ${pz(cfg.rete.quotaEnergia_eur_kWh,5)} €/kWh`),k(b.rete.quotaEnergia));
+  // 3) Spesa oneri di sistema
+  h+=macro("Oneri di sistema",k(b.oneri.totale));
+  const oS=cfg.oneriSistema;
+  if(oS.asos_eur_kWh!=null&&oS.arim_eur_kWh!=null){
+    h+=dett(qt("QE",`${nk(b.consumi.totale/div12)} kWh × ${pk(oS.asos_eur_kWh)} €/kWh · ASOS`),k(oS.asos_eur_kWh*b.consumi.totale));
+    h+=dett(qt("QE",`${nk(b.consumi.totale/div12)} kWh × ${pk(oS.arim_eur_kWh)} €/kWh · ARIM`),k(oS.arim_eur_kWh*b.consumi.totale));
+  }else
+    h+=dett(qt("QE",`${nk(b.consumi.totale/div12)} kWh × ${pk(oS.quotaEnergia_eur_kWh)} €/kWh · ASOS+ARIM`),k(b.oneri.totale-b.oneri.quotaFissa));
+  if(b.oneri.quotaFissa>0)
+    h+=dett(qt("QF",`oneri non residente · forfait annuo`),k(b.oneri.quotaFissa));
+  // 4) Totale imposte e IVA
+  h+=macro("Imposte (accisa + IVA)",k(b.accisa+b.iva));
+  h+=dett(b.accisa===0
+    ?qt("Accisa",`esente · residente ≤3 kW, ≤150 kWh/mese`)
+    :qt("Accisa",`${nk(b.accisa/cfg.imposte.accisa_eur_kWh/div12)} kWh × ${pz(cfg.imposte.accisa_eur_kWh,4)} €/kWh`),k(b.accisa));
+  h+=dett(qt("IVA",`${eur(b.imponibile/div12)} × ${(cfg.imposte.iva*100).toFixed(0)}% su imponibile`),k(b.iva));
   const s=b.sconti,tutti=[...s.attivi,...s.disattivati];
   if(tutti.length||s.nonLuce.length){
     h+='<div class="scSconti"><div class="titoloSc">Sconti disponibili</div>';
@@ -1224,21 +1260,80 @@ function renderCarta(lato,riga,ris){
   }
   h+=`<div class="scTotale"><span>Totale ${div12===12?"mensile":"annuo"}</span>`+
      `<span class="mono">${k(b.totale)}</span></div>`;
+  h+=formulaOfferta(riga,cfg);   // formula generale di composizione, sopra i valori applicati
+  const punObj=leggiPun();
   const meseP=$("punManuale")&&$("punManuale").checked?"manuale":$("mesePun").value;
   const usaPun=riga.tipo!=="mtv";
-  h+=`<div class="scValori">Valori applicati (simulazione ${new Date().toLocaleDateString("it-IT")}): `+
-    `oneri ASOS+ARIM ${pz(cfg.oneriSistema.quotaEnergia_eur_kWh*100,4)} c€/kWh (${cfg.oneriSistema.fonte||"ARERA"}) · `+
-    `rete TD ${pz(cfg.rete.quotaFissa_eur_mese)} €/mese + ${pz(cfg.rete.quotaPotenza_eur_kW_mese)} €/kW/mese + ${pz(cfg.rete.quotaEnergia_eur_kWh,5)} €/kWh (${cfg.rete.fonte||"ARERA"})`+
-    (usaPun?` · PUN rif. ${meseP} (GME via fonti secondarie, vedi Fonti)`:"")+
-    (riga.tipo==="mtv"?` · materia energia ${pz(cfg.maggiorTutelaVulnerabili.materiaEnergia_eur_kWh.monorario*100,3)} c€/kWh, ${cfg.maggiorTutelaVulnerabili.periodoRiferimento||""} (${cfg.maggiorTutelaVulnerabili.fonte||"ARERA"})`:"")+
-    (riga.tipo==="stg"?` · γ ${eur(cfg.stg.parametroGamma_eur_pod_anno)}/POD/anno, dispacciamento ${pz(cfg.stg.dispacciamento_eur_kWh)} €/kWh (${cfg.stg.fonte||"ARERA"})`:"")+
-    ` · accisa ${pz(cfg.imposte.accisa_eur_kWh*100,2)} c€/kWh · IVA ${(cfg.imposte.iva*100).toFixed(0)}% (${cfg.imposte.fonte||"TUA/IVA"})</div>`;
+  const perdTxt=cfg.stg.perditeRete.toLocaleString("it-IT",{minimumFractionDigits:3});
+  const vrig=(et,val,fonte)=>`<div class="vRiga"><span class="vEt">${et}</span><span class="vVal mono">${val}</span></div>`+
+    (fonte?`<div class="vFonte">${fonte}</div>`:"");
+  let vh=`<div class="scValori"><div class="vTitolo">Valori applicati · simulazione ${new Date().toLocaleDateString("it-IT")}</div>`;
+  // ordine: PUN · Materia energia · Rete TD · Oneri · Accisa · IVA
+  if(usaPun)vh+=vrig("PUN",`${pk(punObj.F0)} €/kWh · ${meseP==="manuale"?"inserito a mano":meseP}`,"GME via fonti secondarie · vedi Fonti ARERA");
+  if(riga.tipo==="mtv")
+    vh+=vrig("Materia energia",`${pk(cfg.maggiorTutelaVulnerabili.materiaEnergia_eur_kWh.monorario)} €/kWh · ${cfg.maggiorTutelaVulnerabili.periodoRiferimento||""}`,cfg.maggiorTutelaVulnerabili.fonte||"ARERA · del. 219/2026/R/eel");
+  else if(riga.tipo==="stg")
+    vh+=vrig("Materia energia",`PUN × (1 + perdite ${perdTxt}) + γ ${eur(cfg.stg.parametroGamma_eur_pod_anno)}/POD/anno`,cfg.stg.fonte||"ARERA · servizio a tutele graduali");
+  else{
+    const idx=o.indice&&o.indice!=="—"?o.indice:"prezzo";
+    vh+=vrig("Materia energia",o.tipoPrezzo==="fisso"?`${pk(o.p0)} €/kWh · fisso`:`${idx} + ${pk(o.p0)} €/kWh · spread`,`Condizioni economiche offerta (CTE ${o.nome})`);
+  }
+  vh+=vrig("Rete TD",`${pz(cfg.rete.quotaFissa_eur_mese)} €/mese + ${pz(cfg.rete.quotaPotenza_eur_kW_mese)} €/kW/mese + ${pk(cfg.rete.quotaEnergia_eur_kWh)} €/kWh`,cfg.rete.fonte||"ARERA · del. 575/2025/R/eel · Tariffa TD (σ1+σ2+σ3, UC3, UC6)");
+  const fonteOneri=cfg.oneriSistema.fonte||"ARERA · del. 227/2026/R/com";
+  if(oS.asos_eur_kWh!=null&&oS.arim_eur_kWh!=null){
+    vh+=vrig("Oneri ASOS",`${pk(oS.asos_eur_kWh)} €/kWh`,fonteOneri+" · componente ASOS (rel. tecnica, tab. A)");
+    vh+=vrig("Oneri ARIM",`${pk(oS.arim_eur_kWh)} €/kWh`,fonteOneri+" · componente ARIM (rel. tecnica, tab. B)");
+  }else
+    vh+=vrig("Oneri ASOS+ARIM",`${pk(oS.quotaEnergia_eur_kWh)} €/kWh`,fonteOneri);
+  vh+=vrig("Accisa",`${pk(cfg.imposte.accisa_eur_kWh)} €/kWh`,cfg.imposte.fonte||"TUA, Tabella A punto 13");
+  vh+=vrig("IVA",`${(cfg.imposte.iva*100).toFixed(0)}% · usi domestici`,"");
+  vh+="</div>";h+=vh;
   cont.innerHTML=h;
+}
+/* formula generale di composizione, specifica per l'offerta/servizio selezionato */
+function formulaOfferta(riga,cfg){
+  const o=riga.off,tipo=riga.tipo;
+  const p=v=>v.toLocaleString("it-IT",{minimumFractionDigits:2,maximumFractionDigits:6});
+  const e2=v=>v.toLocaleString("it-IT",{minimumFractionDigits:2,maximumFractionDigits:2});
+  let qe,qf;
+  if(tipo==="mtv"){
+    const m=cfg.maggiorTutelaVulnerabili.materiaEnergia_eur_kWh;
+    qe=riga.b.consumi.fasce.F0!=null
+      ?`prezzo regolato ARERA ${p(m.monorario)} €/kWh × kWh`
+      :`prezzo regolato ARERA (F1 ${p(m.F1)} · F23 ${p(m.F23)} €/kWh) × kWh`;
+    qf=`0 €/anno · inclusa nel prezzo regolato`;
+  }else if(tipo==="stg"){
+    qe=`PUN × (1 + perdite ${cfg.stg.perditeRete.toLocaleString("it-IT",{minimumFractionDigits:3})}) × kWh`;
+    qf=`γ ${e2(cfg.stg.parametroGamma_eur_pod_anno)} €/POD/anno`;
+  }else{
+    const idx=o.indice&&o.indice!=="—"?o.indice:"indice";
+    let base;
+    if(o.tipoPrezzo==="fisso")
+      base=o.biorariaDisp
+        ?`(F1 ${p(o.pF1)} · F2 ${p(o.pF2)} · F3 ${p(o.pF3)} €/kWh, fisso)`
+        :`(${p(o.p0)} €/kWh, fisso)`;
+    else
+      base=o.biorariaDisp
+        ?`(${idx} + F1 ${p(o.pF1)} · F2 ${p(o.pF2)} · F3 ${p(o.pF3)} €/kWh)`
+        :`(${idx} + ${p(o.p0)} €/kWh)`;
+    const perd=o.prezzoConPerdite?"":` × (1 + perdite ${o.perdite.toLocaleString("it-IT",{minimumFractionDigits:2})})`;
+    const cap=o.prezzoMax!=null?`, tetto ${p(o.prezzoMax)} €/kWh`:"";
+    qe=`${base}${perd}${cap} × kWh`;
+    qf=`${e2(o.quotaFissa)} €/anno · commercializzazione`;
+  }
+  return `<div class="scFormula"><div class="fTit">Formula di composizione</div>`
+    +`<div class="fRiga fTot">Totale = Materia energia + Rete TD + Oneri di sistema + Imposte</div>`
+    +`<div class="fRiga">Materia energia = <b class="qTag">QE</b> + <b class="qTag">QF</b></div>`
+    +`<div class="fRiga fSub"><b class="qTag">QE</b> = ${qe}</div>`
+    +`<div class="fRiga fSub"><b class="qTag">QF</b> = ${qf}</div>`
+    +`</div>`;
 }
 /* torte: una per carta */
 let torte={A:null,B:null};
 function renderTortaCarta(lato,riga){
   const canvas=$(lato==="A"?"tortaA":"tortaB");if(!canvas)return;
+  const tit=$(lato==="A"?"titComposA":"titComposB");
+  if(tit)tit.textContent=riga?`Composizione — ${riga.off.nome}`:"Composizione";
   if(torte[lato]){torte[lato].destroy();torte[lato]=null;}
   if(!riga)return;
   const b=riga.b,div12=stato.periodo==="mensile"?12:1;
@@ -1286,11 +1381,12 @@ function renderTabella(ris){
 }
 let graficoPun=null;
 function renderPun(){
-  const anno=new Date().getFullYear();
-  $("annoPun").textContent=anno;
-  const mesi=Object.keys(TariffManager.pun.mesi).sort()
-    .filter(m=>m.startsWith(String(anno)));
-  if(!mesi.length)return;
+  const MESI_IT=["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"];
+  const etichetta=m=>{const[y,mm]=m.split("-");return `${MESI_IT[+mm-1]} '${y.slice(2)}`;};
+  const tutti=Object.keys(TariffManager.pun.mesi).sort();
+  if(!tutti.length)return;
+  const mesi=tutti.slice(-12);            // rolling: ultimi 12 mesi disponibili
+  $("annoPun").textContent=`${etichetta(mesi[0])} – ${etichetta(mesi[mesi.length-1])}`;
   const css=getComputedStyle(document.documentElement);
   const colTesto=css.getPropertyValue("--inchiostro").trim();
   const colGriglia=css.getPropertyValue("--linea").trim();
@@ -1298,7 +1394,7 @@ function renderPun(){
     borderColor:colore,backgroundColor:colore,borderWidth:spess,pointRadius:2.5,tension:.25});
   if(graficoPun)graficoPun.destroy();
   graficoPun=new Chart($("graficoPun"),{type:"line",
-    data:{labels:mesi.map(m=>m.slice(5)),datasets:[
+    data:{labels:mesi.map(etichetta),datasets:[
       serie("F0",css.getPropertyValue("--accento").trim(),3),
       serie("F1",css.getPropertyValue("--f1").trim(),1.2),
       serie("F2",css.getPropertyValue("--f2").trim(),1.2),
