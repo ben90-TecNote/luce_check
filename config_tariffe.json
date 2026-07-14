@@ -11,12 +11,14 @@
     "descrizione": "Trasporto e gestione contatore - Tariffa TD domestici (quote MENSILI come da tabella ARERA)",
     "quotaFissa_eur_mese": 1.92,
     "quotaPotenza_eur_kW_mese": 1.9766,
-    "quotaEnergia_eur_kWh": 0.01473
+    "quotaEnergia_eur_kWh": 0.01473,
+    "fonte": "Tariffa TD domestici (sigma1+sigma2+sigma3, UC3, UC6) — ARERA, del. 575/2025/R/eel"
   },
   "oneriSistema": {
     "descrizione": "ASOS + ARIM. Quota fissa applicata SOLO ai non residenti (ASOS 9509,16 c€/POD/anno, del. 227/2026/R/com; ARIM senza quota fissa per residenza). Quota potenza non applicata ai domestici.",
     "quotaEnergia_eur_kWh": 0.033153,
-    "quotaFissaNonResidente_eur_anno": 95.09
+    "quotaFissaNonResidente_eur_anno": 95.09,
+    "fonte": "Oneri generali di sistema ASOS+ARIM domestici — ARERA, del. 227/2026/R/com"
   },
   "stg": {
     "descrizione": "Servizio a Tutele Graduali domestici non vulnerabili (TIV, del. 362/2023)",
@@ -25,7 +27,8 @@
     "dispacciamento_eur_kWh": 0.013,
     "dispacciamentoPerditeIncluse": true,
     "cpstgd_eur_kWh": 0.0,
-    "perditeRete": 0.102
+    "perditeRete": 0.102,
+    "fonte": "Condizioni STG domestici non vulnerabili — ARERA (TIV, del. 362/2023)"
   },
   "imposte": {
     "accisa_eur_kWh": 0.0227,
@@ -35,7 +38,8 @@
       "potenzaMax_kW": 3,
       "sogliaRecupero_kWhMese": 220
     },
-    "iva": 0.1
+    "iva": 0.1,
+    "fonte": "Accisa: TUA, Tabella A punto 13 · IVA 10% usi domestici"
   },
   "mercatoLibero": {
     "perditeReteDefault": 0.1,
@@ -49,10 +53,13 @@
     }
   },
   "maggiorTutelaVulnerabili": {
-    "descrizione": "Servizio di Maggior Tutela clienti vulnerabili (TIV). PED comprensivo di perdite e dispacciamento. VALORI DA COMPILARE da E2026-smt.xlsx (finche' ped=0 il benchmark Vulnerabili resta disattivato).",
-    "quotaFissaVendita_eur_mese": 0,
-    "ped_eur_kWh": 0,
-    "pedF1_eur_kWh": 0,
-    "pedF23_eur_kWh": 0
+    "descrizione": "Servizio di maggior tutela per clienti vulnerabili (condizioni economiche trimestrali ARERA)",
+    "periodoRiferimento": "1 luglio - 30 settembre 2026",
+    "materiaEnergia_eur_kWh": {
+      "monorario": 0.16913,
+      "F1": 0.15977,
+      "F23": 0.1741
+    },
+    "fonte": "Condizioni economiche per i clienti del Servizio di maggior tutela — ARERA, tabella trimestrale (E2026-smt.xlsx)"
   }
 }
