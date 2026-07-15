@@ -1446,7 +1446,8 @@ function renderPun(){
       serie("F2",css.getPropertyValue("--f2").trim(),1.2),
       serie("F3",css.getPropertyValue("--f3").trim(),1.2)]},
     options:{plugins:{legend:{labels:{color:colTesto,boxWidth:14,font:{size:11}}},
-      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toLocaleString("it-IT",{minimumFractionDigits:4})} €/kWh`}}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toLocaleString("it-IT",{minimumFractionDigits:4})} €/kWh`}},
+      datalabels:{display:false}},
       scales:{x:{ticks:{color:colTesto},grid:{color:colGriglia}},
         y:{beginAtZero:true,ticks:{color:colTesto,callback:v=>v.toFixed(3)},grid:{color:colGriglia}}}}});
 }
