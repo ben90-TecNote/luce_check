@@ -1,85 +1,253 @@
 {
   "meta": {
-    "descrizione": "Snapshot calibrato sugli 8 punti della scheda di confrontabilita CASA FLEX (maggio 2026). NON sono valori ARERA reali: servono solo alla riproducibilita del Tier 2.",
-    "calibratoIl": "2026-07-11",
+    "descrizione": "Snapshot dei confronti CTE vs motore, per Tier 2. Ogni gruppo puo' riferirsi a un'offerta gia' nel catalogo SEED (offerId) oppure portare la propria definizione offerta inline (offerta), per offerte non ancora aggiunte al catalogo live.",
+    "calibratoIl": "2026-07-15",
     "toleranzaTier2": "1%"
   },
-  "punRef": {
-    "F0": 0.1766206
+  "puntiMtv": {
+    "_nota": "Riferimento indipendente da qualunque fornitore: usa direttamente i valori ufficiali ARERA (materiaMTV + rete + oneri correnti), non la colonna (B) di una specifica scheda di confrontabilita' (che puo' essere disallineata, vedi E.ON).",
+    "punti": [
+      {
+        "kWh": 1500,
+        "kW": 3,
+        "residente": true,
+        "attesoEsclImposte": 462.0
+      },
+      {
+        "kWh": 2200,
+        "kW": 3,
+        "residente": true,
+        "attesoEsclImposte": 613.91
+      },
+      {
+        "kWh": 2700,
+        "kW": 3,
+        "residente": true,
+        "attesoEsclImposte": 722.42
+      },
+      {
+        "kWh": 3200,
+        "kW": 3,
+        "residente": true,
+        "attesoEsclImposte": 830.93
+      },
+      {
+        "kWh": 900,
+        "kW": 3,
+        "residente": false,
+        "attesoEsclImposte": 426.89
+      },
+      {
+        "kWh": 4000,
+        "kW": 3,
+        "residente": false,
+        "attesoEsclImposte": 1099.63
+      },
+      {
+        "kWh": 3500,
+        "kW": 4.5,
+        "residente": true,
+        "attesoEsclImposte": 931.61
+      },
+      {
+        "kWh": 6000,
+        "kW": 6,
+        "residente": true,
+        "attesoEsclImposte": 1509.72
+      }
+    ]
   },
-  "rete": {
-    "quotaFissa_eur_mese": 3.9425,
-    "quotaPotenza_eur_kW_mese": 3.953333,
-    "quotaEnergia_eur_kWh": 0.01473
-  },
-  "oneriSistema": {
-    "quotaEnergia_eur_kWh": 0.033153,
-    "quotaFissaNonResidente_eur_anno": 177.4961
-  },
-  "stg": {
-    "parametroGamma_eur_pod_anno": -72.65,
-    "dispacciamento_eur_kWh": 0.013,
-    "dispacciamentoPerditeIncluse": true,
-    "cpstgd_eur_kWh": 0,
-    "perditeRete": 0.102
-  },
-  "imposte": {
-    "accisa_eur_kWh": 0.0227,
-    "esenzioneResidente": {
-      "kWhMese": 150,
-      "potenzaMax_kW": 3,
-      "sogliaRecupero_kWhMese": 220
-    },
-    "iva": 0.1
-  },
-  "puntiGolden": [
+  "gruppi": [
     {
-      "kWh": 1500,
-      "kW": 3,
-      "residente": true,
-      "attesoEsclImposte": 812.83
+      "offerId": "1mob-casaflex",
+      "nome": "CASA FLEX (1Mobile)",
+      "dataCte": "2026-05-13",
+      "note": "Calibrata su scheda di confrontabilita' di un trimestre diverso da quello corrente: serve config storica (cfgOverride), non quella live.",
+      "scontiInclusiNelTotale": false,
+      "punRef": {
+        "F0": 0.1766206
+      },
+      "cfgOverride": {
+        "rete": {
+          "quotaFissa_eur_mese": 3.9425,
+          "quotaPotenza_eur_kW_mese": 3.953333,
+          "quotaEnergia_eur_kWh": 0.01473
+        },
+        "oneriSistema": {
+          "quotaEnergia_eur_kWh": 0.033153,
+          "quotaFissaNonResidente_eur_anno": 177.4961
+        }
+      },
+      "punti": [
+        {
+          "kWh": 1500,
+          "kW": 3,
+          "residente": true,
+          "attesoEsclImposte": 812.83
+        },
+        {
+          "kWh": 2200,
+          "kW": 3,
+          "residente": true,
+          "attesoEsclImposte": 1006.78
+        },
+        {
+          "kWh": 2700,
+          "kW": 3,
+          "residente": true,
+          "attesoEsclImposte": 1145.31
+        },
+        {
+          "kWh": 3200,
+          "kW": 3,
+          "residente": true,
+          "attesoEsclImposte": 1283.85
+        },
+        {
+          "kWh": 900,
+          "kW": 3,
+          "residente": false,
+          "attesoEsclImposte": 824.09
+        },
+        {
+          "kWh": 4000,
+          "kW": 3,
+          "residente": false,
+          "attesoEsclImposte": 1683.01
+        },
+        {
+          "kWh": 3500,
+          "kW": 4.5,
+          "residente": true,
+          "attesoEsclImposte": 1438.12
+        },
+        {
+          "kWh": 6000,
+          "kW": 6,
+          "residente": true,
+          "attesoEsclImposte": 2201.95
+        }
+      ]
     },
     {
-      "kWh": 2200,
-      "kW": 3,
-      "residente": true,
-      "attesoEsclImposte": 1006.78
+      "offerId": "eon-flexclick",
+      "nome": "E.ON FlexClick Luce - PROMO",
+      "dataCte": "2026-07-10",
+      "note": "Ora nel catalogo SEED live (eon-flexclick). Bonus 27EUR incondizionato: incluso nella colonna (A) della scheda, va sottratto.",
+      "scontiInclusiNelTotale": true,
+      "punRef": {
+        "F0": 0.1331
+      },
+      "punti": [
+        {
+          "kWh": 1500,
+          "kW": 3,
+          "residente": true,
+          "attesoEsclImposte": 501.76
+        },
+        {
+          "kWh": 2200,
+          "kW": 3,
+          "residente": true,
+          "attesoEsclImposte": 653.65
+        },
+        {
+          "kWh": 2700,
+          "kW": 3,
+          "residente": true,
+          "attesoEsclImposte": 762.13
+        },
+        {
+          "kWh": 3200,
+          "kW": 3,
+          "residente": true,
+          "attesoEsclImposte": 870.62
+        },
+        {
+          "kWh": 900,
+          "kW": 3,
+          "residente": false,
+          "attesoEsclImposte": 466.67
+        },
+        {
+          "kWh": 4000,
+          "kW": 3,
+          "residente": false,
+          "attesoEsclImposte": 1139.29
+        },
+        {
+          "kWh": 3500,
+          "kW": 4.5,
+          "residente": true,
+          "attesoEsclImposte": 971.29
+        },
+        {
+          "kWh": 6000,
+          "kW": 6,
+          "residente": true,
+          "attesoEsclImposte": 1549.3
+        }
+      ]
     },
     {
-      "kWh": 2700,
-      "kW": 3,
-      "residente": true,
-      "attesoEsclImposte": 1145.31
-    },
-    {
-      "kWh": 3200,
-      "kW": 3,
-      "residente": true,
-      "attesoEsclImposte": 1283.85
-    },
-    {
-      "kWh": 900,
-      "kW": 3,
-      "residente": false,
-      "attesoEsclImposte": 824.09
-    },
-    {
-      "kWh": 4000,
-      "kW": 3,
-      "residente": false,
-      "attesoEsclImposte": 1683.01
-    },
-    {
-      "kWh": 3500,
-      "kW": 4.5,
-      "residente": true,
-      "attesoEsclImposte": 1438.12
-    },
-    {
-      "kWh": 6000,
-      "kW": 6,
-      "residente": true,
-      "attesoEsclImposte": 2201.95
+      "offerId": "eon-placet-variabile",
+      "nome": "E.ON PLACET Variabile Luce Domestici",
+      "dataCte": "2026-07-10",
+      "note": "Ora nel catalogo SEED live (eon-placet-variabile). Sconto 6EUR condizionato (domiciliazione+eBill): NON incluso nella colonna (A) della scheda, non va sottratto.",
+      "scontiInclusiNelTotale": false,
+      "punRef": {
+        "F0": 0.124433
+      },
+      "punti": [
+        {
+          "kWh": 1500,
+          "kW": 3,
+          "residente": true,
+          "attesoEsclImposte": 649.06
+        },
+        {
+          "kWh": 2200,
+          "kW": 3,
+          "residente": true,
+          "attesoEsclImposte": 851.48
+        },
+        {
+          "kWh": 2700,
+          "kW": 3,
+          "residente": true,
+          "attesoEsclImposte": 996.07
+        },
+        {
+          "kWh": 3200,
+          "kW": 3,
+          "residente": true,
+          "attesoEsclImposte": 1140.65
+        },
+        {
+          "kWh": 900,
+          "kW": 3,
+          "residente": false,
+          "attesoEsclImposte": 570.65
+        },
+        {
+          "kWh": 4000,
+          "kW": 3,
+          "residente": false,
+          "attesoEsclImposte": 1467.08
+        },
+        {
+          "kWh": 3500,
+          "kW": 4.5,
+          "residente": true,
+          "attesoEsclImposte": 1262.98
+        },
+        {
+          "kWh": 6000,
+          "kW": 6,
+          "residente": true,
+          "attesoEsclImposte": 2021.49
+        }
+      ]
     }
   ]
 }
