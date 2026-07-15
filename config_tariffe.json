@@ -9,7 +9,7 @@
     "quotaFissa_eur_mese": 1.92,
     "quotaPotenza_eur_kW_mese": 1.9766,
     "quotaEnergia_eur_kWh": 0.01473,
-    "fonte": "ARERA · del. 575/2025/R/eel · Tariffa TD (σ1+σ2+σ3, UC3, UC6)"
+    "fonte": "ARERA · del. 575/2025/R/eel · Tariffa TD (σ1, σ2, σ3, UC3, UC6)"
   },
   "oneriSistema": {
     "quotaEnergia_eur_kWh": 0.033153,
@@ -42,7 +42,7 @@
       "potenzaMax_kW": 3,
       "sogliaRecupero_kWhMese": 220
     },
-    "iva": 0.10,
+    "iva": 0.1,
     "fonte": "TUA, Tabella A punto 13"
   }
 }
