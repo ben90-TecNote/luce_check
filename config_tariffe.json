@@ -19,12 +19,33 @@
     "fonte": "ARERA · del. 227/2026/R/com"
   },
   "stg": {
-    "parametroGamma_eur_pod_anno": -72.65,
+    "_nota": "Dati specifici Illumia, lotti: Roma prov. (escl. comune), Firenze, Torino comune, Como, Varese, Napoli prov. (escl. comune), Nuoro, Sassari. Altri operatori STG hanno gamma/CDISPD/CPSTGD diversi (dipendono dalla propria gara).",
+    "parametroGamma_eur_pod_anno": -73.1637,
     "dispacciamento_eur_kWh": 0.013,
     "dispacciamentoPerditeIncluse": true,
-    "cpstgd_eur_kWh": 0,
+    "cpstgd_eur_kWh": -0.00033,
     "perditeRete": 0.102,
-    "fonte": "ARERA · servizio a tutele graduali"
+    "fonte": "Illumia · CE-STG-DOM · valori Maggio 2026 (gamma aggiornato annualmente, CDISPD/CPSTGD variano mensilmente: qui usato l'ultimo mese disponibile come stima rappresentativa, vedi storicoMensile)",
+    "storicoMensile": {
+      "_nota": "CELD monorario €/kWh, CDISPD €/kWh, CPSTGD €/kWh, gamma €/POD/anno. Fonte: schede Illumia mensili + bolletta reale (lug 2025).",
+      "2025-01": {"celd":0.15733,"cdispd":0.022728,"cpstgd":-0.016010,"gamma":-72.6542},
+      "2025-02": {"celd":0.16540,"cdispd":0.021217,"cpstgd":-0.016010,"gamma":-72.6542},
+      "2025-03": {"celd":0.13260,"cdispd":0.014284,"cpstgd":-0.016010,"gamma":-72.6542},
+      "2025-04": {"celd":0.10984,"cdispd":0.013862,"cpstgd":-0.02086,"gamma":-72.6542},
+      "2025-05": {"celd":0.10293,"cdispd":0.013862,"cpstgd":-0.02086,"gamma":-72.6542},
+      "2025-06": {"celd":0.12296,"cdispd":0.018189,"cpstgd":-0.02086,"gamma":-72.6542},
+      "2025-07": {"celd":0.124440,"cdispd":0.034601,"cpstgd":-0.005450,"gamma":-72.6542},
+      "2025-08": {"celd":0.11967,"cdispd":0.017664,"cpstgd":-0.005450,"gamma":-73.1637},
+      "2025-09": {"celd":0.11998,"cdispd":0.014774,"cpstgd":-0.005450,"gamma":-73.1637},
+      "2025-10": {"celd":0.12215,"cdispd":0.015483,"cpstgd":0.00069,"gamma":-73.1637},
+      "2025-11": {"celd":0.12879,"cdispd":0.015483,"cpstgd":0.00069,"gamma":-73.1637},
+      "2025-12": {"celd":0.12704,"cdispd":0.019788,"cpstgd":0.00069,"gamma":-73.1637},
+      "2026-01": {"celd":0.14593,"cdispd":0.025305,"cpstgd":-0.00033,"gamma":-73.1637},
+      "2026-02": {"celd":0.12585,"cdispd":0.023366,"cpstgd":-0.00033,"gamma":-73.1637},
+      "2026-03": {"celd":0.13129,"cdispd":0.015531,"cpstgd":0.002140,"gamma":-73.1637},
+      "2026-04": {"celd":0.13141,"cdispd":0.015531,"cpstgd":0.002140,"gamma":-73.1637},
+      "2026-05": {"celd":0.15774,"cdispd":0.016509,"cpstgd":-0.00033,"gamma":-73.1637}
+    }
   },
   "maggiorTutelaVulnerabili": {
     "periodoRiferimento": "1 luglio - 30 settembre 2026",
@@ -33,7 +54,8 @@
       "F1": 0.15977,
       "F23": 0.1741
     },
-    "fonte": "ARERA · del. 219/2026/R/eel · Condizioni Maggior Tutela vulnerabili"
+    "quotaFissa_eur_anno": 42.287,
+    "fonte": "ARERA · del. 219/2026/R/eel · Condizioni Maggior Tutela vulnerabili (materia energia + PCV+DISPbt = quota fissa; confermato anche da bolletta reale mag-giu 2026)"
   },
   "imposte": {
     "accisa_eur_kWh": 0.0227,
