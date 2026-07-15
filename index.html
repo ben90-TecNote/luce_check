@@ -487,6 +487,26 @@ footer{max-width:1280px;margin:26px auto 0;padding:0 20px;font-size:11.5px;color
     <label class="check"><input type="checkbox" id="oReqSim"> SIM 1Mobile</label>
     <label>Note CGF</label>
     <textarea id="oNote" rows="2"></textarea>
+    <label class="sez" style="margin-top:14px">Verifica CTE (scheda di confrontabilità) — opzionale</label>
+    <div class="nota">Se la CTE ha la tabella con gli 8 casi, incollali qui: una riga per punto,
+      formato <span class="mono">kWh,kW,residente,importo atteso</span> (residente: si/no, decimali col punto). Esempio:
+      <span class="mono">1500,3,si,501.76</span>. Servono per il pannello 🔍 Verifica nella lista offerte.</div>
+    <textarea id="oVerPunti" rows="8" placeholder="1500,3,si,501.76
+2200,3,si,653.65
+2700,3,si,762.13
+3200,3,si,870.62
+900,3,no,466.67
+4000,3,no,1139.29
+3500,4.5,si,971.29
+6000,6,si,1549.30"></textarea>
+    <div class="riga2">
+      <div><label>PUN di riferimento (solo offerte indicizzate)</label>
+        <input type="number" step="0.0001" id="oVerPun" placeholder="es. 0.1331"></div>
+      <div><label>Data della CTE</label>
+        <input type="date" id="oVerData"></div>
+    </div>
+    <label class="check"><input type="checkbox" id="oVerSconti">
+      Lo sconto è già incluso nel totale della scheda (colonna A)</label>
     <div class="barraBott">
       <button class="bott" id="btSalva">Salva offerta</button>
       <button class="bott sec" id="btAnnulla">Annulla</button>
@@ -583,7 +603,7 @@ footer{max-width:1280px;margin:26px auto 0;padding:0 20px;font-size:11.5px;color
   <span class="mono">schemaVersion</span>). Perdite applicate alla sola componente energia;
   rete, oneri e accise sui kWh misurati; IVA 10% sull'imponibile netto sconti pre-IVA;
   bonus una tantum come credito post-IVA rateizzato sulla durata.
-  <span class="mono" style="opacity:.7">· build 2026.07.15</span>
+  <span class="mono" style="opacity:.7">· build 2026.07.15b</span>
 </footer>
 
 <script>
@@ -1570,6 +1590,12 @@ function apriForm(o){
   $("oReqGas").checked=req.includes("dual_gas");
   $("oReqSim").checked=req.includes("telefonia_1mobile");
   $("oNote").value=o?o.note||"":"";
+  const v=o&&o.verificaCte;
+  $("oVerPunti").value=(v&&Array.isArray(v.punti))
+    ?v.punti.map(p=>`${p.kWh},${p.kW},${p.residente?"si":"no"},${p.attesoCte}`).join("\n"):"";
+  $("oVerPun").value=(v&&v.punRef&&v.punRef.F0!=null)?v.punRef.F0:"";
+  $("oVerData").value=v?v.dataCte||"":"";
+  $("oVerSconti").checked=!!(v&&v.scontiInclusiNelTotale);
   aggiornaFormVisibilita();
   $("formOfferta").style.display="";
   $("formOfferta").scrollIntoView({behavior:"smooth",block:"nearest"});
@@ -1581,6 +1607,26 @@ function aggiornaFormVisibilita(){
   $("lblPrezzo").textContent=(fisso?"Prezzo mono":"Spread mono")+" (€/kWh)";
   if(fisso)$("oIndice").value="—";
   else if($("oIndice").value==="—")$("oIndice").value="PUN";
+}
+function parseVerificaCte(){
+  const righe=$("oVerPunti").value.split("\n").map(r=>r.trim()).filter(Boolean);
+  const punti=[];
+  for(const r of righe){
+    const parti=r.split(",").map(x=>x.trim());
+    if(parti.length<4)continue;
+    const kWh=+parti[0],kW=+parti[1],atteso=+parti[3];
+    if(!isFinite(kWh)||!isFinite(kW)||!isFinite(atteso))continue;
+    punti.push({kWh,kW,residente:/^s/i.test(parti[2]),attesoCte:atteso});
+  }
+  if(!punti.length)return null;
+  const punVal=$("oVerPun").value;
+  const esistente=offerte.find(x=>x.id===stato.editId);
+  return{dataCte:$("oVerData").value||null,
+    punRef:punVal!==""?{F0:+punVal}:null,
+    scontiInclusiNelTotale:$("oVerSconti").checked,
+    cfgOverride:(esistente&&esistente.verificaCte&&esistente.verificaCte.cfgOverride)||null,
+    fonte:(esistente&&esistente.verificaCte&&esistente.verificaCte.fonte)||"inserita manualmente",
+    punti};
 }
 function salvaForm(){
   const o={schemaVersion:2,id:stato.editId||nid(),
@@ -1600,7 +1646,8 @@ function salvaForm(){
       ...($("oReqEbill").checked?["domiciliazione+eBill"]:[]),
       ...($("oReqGas").checked?["dual_gas"]:[]),
       ...($("oReqSim").checked?["telefonia_1mobile"]:[])],
-    note:$("oNote").value.trim()};
+    note:$("oNote").value.trim(),
+    verificaCte:parseVerificaCte()};
   const v=validaOfferta(o);
   if(!v.ok){alert("Offerta non valida:\n• "+v.errori.join("\n• "));return;}
   const i=offerte.findIndex(x=>x.id===o.id);
@@ -1928,7 +1975,7 @@ async function avvio(){
   if(!offerte.length){offerte=SEED.slice();OfferStore.salva(offerte);}
   wiring();caricaFonti();aggiorna();
 }
-console.log("luce-check build 2026.07.15");
+console.log("luce-check build 2026.07.15b");
 avvio();
 </script>
 </body>
