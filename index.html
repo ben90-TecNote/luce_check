@@ -266,6 +266,15 @@ tr.scaduta td:first-child{text-decoration:none}
   .scRiga.sub{display:none}
   .scTesta,.scRiga{grid-template-columns:minmax(90px,1.2fr) 1fr 1fr;font-size:12px}
 }
+.tabVerifica{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0}
+.tabVerifica th{text-align:right;font-weight:800;font-size:11.5px;padding:4px 6px;
+  border-bottom:2px solid var(--linea);color:var(--grigio)}
+.tabVerifica th:first-child,.tabVerifica td:first-child,
+.tabVerifica th:nth-child(3),.tabVerifica td:nth-child(3){text-align:left}
+.tabVerifica td{text-align:right;padding:5px 6px;border-bottom:1px dashed var(--linea)}
+.tabVerifica tr.ok .scarto{color:var(--verde);font-weight:700}
+.tabVerifica tr.bad .scarto{color:var(--rosso);font-weight:700}
+@media(max-width:520px){.tabVerifica{font-size:11.5px}.tabVerifica td,.tabVerifica th{padding:4px 3px}}
 /* badge confidenza estrazione */
 .conf{display:inline-block;width:10px;height:10px;border-radius:99px;margin-left:6px;
   vertical-align:middle;border:1px solid rgba(0,0,0,.15)}
@@ -483,9 +492,14 @@ footer{max-width:1280px;margin:26px auto 0;padding:0 20px;font-size:11.5px;color
       <button class="bott sec" id="btAnnulla">Annulla</button>
     </div>
   </section>
+  <section class="pannello" id="pannelloVerifica" style="display:none">
+    <h2 class="sez">Verifica CTE <span class="nota" id="verificaSottotitolo"></span></h2>
+    <div id="verificaCorpo"></div>
+    <div class="barraBott">
+      <button class="bott sec" id="btChiudiVerifica">Chiudi</button>
+    </div>
+  </section>
 </main>
-
-<!-- ============ 4. FONTI ============ -->
 <main class="pagina pagina2" id="pgFonti" style="display:none">
   <section class="blocco">
     <h2 class="sez">Fonti ARERA e dati</h2>
@@ -569,7 +583,7 @@ footer{max-width:1280px;margin:26px auto 0;padding:0 20px;font-size:11.5px;color
   <span class="mono">schemaVersion</span>). Perdite applicate alla sola componente energia;
   rete, oneri e accise sui kWh misurati; IVA 10% sull'imponibile netto sconti pre-IVA;
   bonus una tantum come credito post-IVA rateizzato sulla durata.
-  <span class="mono" style="opacity:.7">· build 2026.07.14</span>
+  <span class="mono" style="opacity:.7">· build 2026.07.15</span>
 </footer>
 
 <script>
@@ -768,8 +782,10 @@ const CalcEngine={
   },
   materiaMTV(consumi,cfgMtv){
     /* materia energia = valore fisso trimestrale ARERA per fascia
-       (niente quota fissa vendita, niente dispacciamento separato) */
+       + quota fissa annua (PCV+DISPbt, es. 42,287 €/anno per lug-set 2026)
+       niente dispacciamento separato: e' gia' incluso nella quota fissa. */
     const me=(cfgMtv&&cfgMtv.materiaEnergia_eur_kWh)||{};
+    const quotaFissa=(cfgMtv&&cfgMtv.quotaFissa_eur_anno)||0;
     let energia=0;const dettaglioFasce={};
     for(const[f,kwh]of Object.entries(consumi.fasce)){
       const prezzo=f==="F1"?(me.F1||me.monorario||0)
@@ -777,7 +793,7 @@ const CalcEngine={
         :(me.F23||me.monorario||0);
       const voce=prezzo*kwh;dettaglioFasce[f]={prezzo,kwh,importo:voce};energia+=voce;
     }
-    return{quotaFissa:0,energia,sconto:0,totale:energia,dettaglioFasce};
+    return{quotaFissa,energia,sconto:0,totale:quotaFissa+energia,dettaglioFasce};
   },
   dispacciamento(consumi,cfgStg,off){
     if(off&&off.dispIncluso)return 0;
@@ -893,56 +909,66 @@ const OfferStore={
   salva(off){try{localStorage.setItem(this.K,JSON.stringify(off));}catch(e){}}
 };
 
-/* ================= SEED (8 offerte, §9) ================= */
+/* ================= SEED (3 offerte, §9) =================
+   Solo offerte con verifica Tier 2 completa (8 punti scheda di confrontabilità).
+   Tolte dal 2026-07-15: ENEL MOVE, ENEL FLEX CONTROL, FIXA TIME 24 SMART/BASE,
+   FIXA TIME 12, TREND CASA, PLACET FISSA (Plenitude) — nessuna aveva verifica
+   Tier 2, solo Tier 1 (materia). E.ON PLACET Fissa esclusa: formula biorario
+   ancora da risolvere (~1,5-2% di scarto non spiegato). */
 const SEED=[
  {"schemaVersion":2,"id":"1mob-casaflex","nome":"CASA FLEX","fornitore":"1Mobile (SG Energia)",
   "tipoPrezzo":"indicizzato","indice":"PUN","durataMesi":12,"scadenza":"2026-05-31",
   "biorariaDisp":false,"p0":0.01991,"pF1":0,"pF2":0,"pF3":0,"prezzoConPerdite":false,"perdite":0.10,
   "prezzoMax":null,"quotaFissa":207.6,"dispIncluso":false,"scontoTipo":"eur_mese","scontoValore":11,
   "scontoCond":"telefonia_1mobile","scontoSuLuce":true,"extra":null,
-  "note":"Spread su PUN. Sconto 11 €/PdP/mese solo con SIM 1Mobile attiva; revocabile alla disdetta. Sottoscrivibile 01-31/05/2026."},
- {"schemaVersion":2,"id":"enel-move","nome":"ENEL MOVE LUCE","fornitore":"Enel Energia",
-  "tipoPrezzo":"fisso","indice":"—","durataMesi":24,"scadenza":"2026-07-28",
-  "biorariaDisp":false,"p0":0.179,"pF1":0,"pF2":0,"pF3":0,"prezzoConPerdite":true,"perdite":0.10,
-  "prezzoMax":null,"quotaFissa":168,"dispIncluso":false,"scontoTipo":"bonus_unatantum","scontoValore":60,
-  "scontoCond":"dual_gas","scontoSuLuce":true,"extra":null,
-  "note":"Prezzo comprensivo perdite. Bonus Dual 60 €/fornitura solo con Enel Move Gas (4 rate da 15 € in 2 anni). Include Enel Move Plus Luce (assistenza) gratis 36 mesi. 100% rinnovabile."},
- {"schemaVersion":2,"id":"enel-flex-control","nome":"ENEL FLEX CONTROL LUCE","fornitore":"Enel Energia",
-  "tipoPrezzo":"indicizzato","indice":"PUN Index GME","durataMesi":12,"scadenza":"2026-07-28",
-  "biorariaDisp":false,"p0":0.02226,"pF1":0,"pF2":0,"pF3":0,"prezzoConPerdite":true,"perdite":0.10,
-  "prezzoMax":0.174,"quotaFissa":180,"dispIncluso":false,"scontoTipo":"—","scontoValore":0,
-  "scontoCond":"—","scontoSuLuce":false,"extra":null,
-  "note":"α inclusivo perdite. Tetto Prezzo Luce 0,174 €/kWh per 12 mesi. 100% rinnovabile."},
- {"schemaVersion":2,"id":"plen-fixa24-smart","nome":"FIXA TIME 24 SMART","fornitore":"Plenitude",
-  "tipoPrezzo":"fisso","indice":"—","durataMesi":24,"scadenza":"2026-07-12",
-  "biorariaDisp":true,"p0":0.09,"pF1":0.0925,"pF2":0.0885,"pF3":0.0885,"prezzoConPerdite":false,"perdite":0.10,
-  "prezzoMax":null,"quotaFissa":144,"dispIncluso":false,"scontoTipo":"perc_prezzo","scontoValore":0.05,
-  "scontoCond":"domiciliazione","scontoSuLuce":true,"extra":null,
-  "note":"Prezzi netto-perdite. Bioraria F2=F3=F23. Sconto 5% su Corrispettivo Luce con domiciliazione SEPA. Una-tantum 35 € su attivazione/voltura con cambio fornitore. 100% rinnovabile."},
- {"schemaVersion":2,"id":"plen-fixa24-base","nome":"FIXA TIME 24","fornitore":"Plenitude",
-  "tipoPrezzo":"fisso","indice":"—","durataMesi":24,"scadenza":"2026-07-12",
-  "biorariaDisp":true,"p0":0.10,"pF1":0.1028,"pF2":0.0984,"pF3":0.0984,"prezzoConPerdite":false,"perdite":0.10,
-  "prezzoMax":null,"quotaFissa":144,"dispIncluso":false,"scontoTipo":"perc_prezzo","scontoValore":0.05,
-  "scontoCond":"domiciliazione","scontoSuLuce":true,"extra":null,
-  "note":"Versione BASE. Prezzi netto-perdite. Sconto 5% su Corrispettivo Luce con domiciliazione. Una-tantum 35 €. 100% rinnovabile."},
- {"schemaVersion":2,"id":"plen-fixatime-12","nome":"FIXA TIME","fornitore":"Plenitude",
-  "tipoPrezzo":"fisso","indice":"—","durataMesi":12,"scadenza":"2026-07-12",
-  "biorariaDisp":true,"p0":0.12,"pF1":0.1217,"pF2":0.119,"pF3":0.119,"prezzoConPerdite":false,"perdite":0.10,
-  "prezzoMax":null,"quotaFissa":144,"dispIncluso":false,"scontoTipo":"perc_prezzo","scontoValore":0.05,
-  "scontoCond":"domiciliazione","scontoSuLuce":true,"extra":null,
-  "note":"Versione 12 mesi BASE. Prezzi netto-perdite. Sconto 5% con domiciliazione. Una-tantum 35 €. 100% rinnovabile."},
- {"schemaVersion":2,"id":"plen-trend-casa","nome":"TREND CASA","fornitore":"Plenitude",
-  "tipoPrezzo":"indicizzato","indice":"PUN Index GME","durataMesi":24,"scadenza":"2026-07-12",
-  "biorariaDisp":false,"p0":0.02,"pF1":0,"pF2":0,"pF3":0,"prezzoConPerdite":false,"perdite":0.10,
-  "prezzoMax":null,"quotaFissa":144,"dispIncluso":false,"scontoTipo":"eur_anno","scontoValore":12,
-  "scontoCond":"domiciliazione","scontoSuLuce":false,"extra":null,
-  "note":"Contributo al Consumo netto-perdite 0,02 €/kWh. ATTENZIONE: sconto domiciliazione 12 €/anno applicato alla quota fissa GAS, non alla luce (scontoSuLuce=false). 100% rinnovabile."},
- {"schemaVersion":2,"id":"plen-placet-fissa","nome":"PLACET FISSA LUCE","fornitore":"Plenitude",
-  "tipoPrezzo":"fisso","indice":"—","durataMesi":12,"scadenza":"2026-07-12",
-  "biorariaDisp":true,"p0":0.264,"pF1":0.2653,"pF2":0.2632,"pF3":0.2632,"prezzoConPerdite":false,"perdite":0.10,
-  "prezzoMax":null,"quotaFissa":144,"dispIncluso":false,"scontoTipo":"eur_anno","scontoValore":6,
+  "note":"Spread su PUN. Sconto 11 €/PdP/mese solo con SIM 1Mobile attiva; revocabile alla disdetta. Sottoscrivibile 01-31/05/2026.",
+  "verificaCte":{"dataCte":"2026-05-13","fonte":"scheda di confrontabilità CASA FLEX",
+    "punRef":{"F0":0.1766206},"scontiInclusiNelTotale":false,
+    "cfgOverride":{"rete":{"quotaFissa_eur_mese":3.9425,"quotaPotenza_eur_kW_mese":3.953333,"quotaEnergia_eur_kWh":0.01473},
+      "oneriSistema":{"quotaEnergia_eur_kWh":0.033153,"quotaFissaNonResidente_eur_anno":177.4961}},
+    "punti":[
+      {"kWh":1500,"kW":3,"residente":true,"attesoCte":812.83},
+      {"kWh":2200,"kW":3,"residente":true,"attesoCte":1006.78},
+      {"kWh":2700,"kW":3,"residente":true,"attesoCte":1145.31},
+      {"kWh":3200,"kW":3,"residente":true,"attesoCte":1283.85},
+      {"kWh":900,"kW":3,"residente":false,"attesoCte":824.09},
+      {"kWh":4000,"kW":3,"residente":false,"attesoCte":1683.01},
+      {"kWh":3500,"kW":4.5,"residente":true,"attesoCte":1438.12},
+      {"kWh":6000,"kW":6,"residente":true,"attesoCte":2201.95}]}},
+ {"schemaVersion":2,"id":"eon-flexclick","nome":"E.ON FlexClick Luce - PROMO","fornitore":"E.ON Energia",
+  "tipoPrezzo":"indicizzato","indice":"PUN Index GME","durataMesi":12,"scadenza":"2026-07-16",
+  "biorariaDisp":false,"p0":0.0088,"pF1":0,"pF2":0,"pF3":0,"prezzoConPerdite":false,"perdite":0.10,
+  "prezzoMax":null,"quotaFissa":109.11,"dispIncluso":false,"scontoTipo":"bonus_unatantum","scontoValore":27,
+  "scontoCond":"—","scontoSuLuce":true,"extra":null,
+  "note":"Codice offerta 000362ESVFL01XXZG36T0DFLXD00A000. Prezzo PUN GME + spread, perdite +10% applicate su PUN+spread. Bonus 27 € incondizionato erogato in 3 rate da 9 €/mese sui primi 3 mesi. 100% rinnovabile (GO).",
+  "verificaCte":{"dataCte":"2026-07-10","fonte":"scheda di confrontabilità E.ON FlexClick",
+    "punRef":{"F0":0.1331},"scontiInclusiNelTotale":true,"cfgOverride":null,
+    "punti":[
+      {"kWh":1500,"kW":3,"residente":true,"attesoCte":501.76},
+      {"kWh":2200,"kW":3,"residente":true,"attesoCte":653.65},
+      {"kWh":2700,"kW":3,"residente":true,"attesoCte":762.13},
+      {"kWh":3200,"kW":3,"residente":true,"attesoCte":870.62},
+      {"kWh":900,"kW":3,"residente":false,"attesoCte":466.67},
+      {"kWh":4000,"kW":3,"residente":false,"attesoCte":1139.29},
+      {"kWh":3500,"kW":4.5,"residente":true,"attesoCte":971.29},
+      {"kWh":6000,"kW":6,"residente":true,"attesoCte":1549.30}]}},
+ {"schemaVersion":2,"id":"eon-placet-variabile","nome":"E.ON PLACET Variabile Luce Domestici","fornitore":"E.ON Energia",
+  "tipoPrezzo":"indicizzato","indice":"PUN Index GME","durataMesi":12,"scadenza":"2026-07-23",
+  "biorariaDisp":false,"p0":0.0831,"pF1":0,"pF2":0,"pF3":0,"prezzoConPerdite":false,"perdite":0.10,
+  "prezzoMax":null,"quotaFissa":121.11,"dispIncluso":false,"scontoTipo":"eur_anno","scontoValore":6,
   "scontoCond":"domiciliazione+eBill","scontoSuLuce":true,"extra":null,
-  "note":"Solo luce. La CTE non dichiara esplicitamente 'netto perdite' -> incertezza sul basis (~80%). Sconto 6 €/anno con SEPA + bolletta elettronica. Voltura 23 €."}
+  "note":"Codice offerta 000362ESVFP01XXPT26T0D000000C000. Offerta PLACET (Delibera ARERA 555/2017/R/com). Prezzo PUN GME + spread, perdite +10% applicate su PUN+spread. Sconto 6 €/anno con bolletta digitale + addebito diretto.",
+  "verificaCte":{"dataCte":"2026-07-10","fonte":"scheda di confrontabilità E.ON PLACET Variabile",
+    "punRef":{"F0":0.124433},"scontiInclusiNelTotale":false,"cfgOverride":null,
+    "punti":[
+      {"kWh":1500,"kW":3,"residente":true,"attesoCte":649.06},
+      {"kWh":2200,"kW":3,"residente":true,"attesoCte":851.48},
+      {"kWh":2700,"kW":3,"residente":true,"attesoCte":996.07},
+      {"kWh":3200,"kW":3,"residente":true,"attesoCte":1140.65},
+      {"kWh":900,"kW":3,"residente":false,"attesoCte":570.65},
+      {"kWh":4000,"kW":3,"residente":false,"attesoCte":1467.08},
+      {"kWh":3500,"kW":4.5,"residente":true,"attesoCte":1262.98},
+      {"kWh":6000,"kW":6,"residente":true,"attesoCte":2021.49}]}}
 ];
 
 /* ================= XLSX v2 (§7) ================= */
@@ -1173,7 +1199,8 @@ function renderLista(ris){
       <div class="dt">${o.tipoPrezzo==="fisso"?"fisso":"indicizzato "+o.indice}
       · ${o.durataMesi} mesi ${r.scad.stato==="ok"?"· "+r.scad.label:""}</div></div>
       <div class="destra"><div class="tot mono">${eur(r.b.totale/div12)}</div>
-      <div class="azioni"><button title="Modifica" data-az="mod" data-id="${o.id}">✎</button>
+      <div class="azioni">${o.verificaCte?'<button title="Verifica CTE" data-az="ver" data-id="'+o.id+'">🔍</button>':""}
+      <button title="Modifica" data-az="mod" data-id="${o.id}">✎</button>
       <button title="Elimina" data-az="del" data-id="${o.id}">🗑</button></div></div>`;
     div.onclick=e=>{
       const az=e.target.dataset&&e.target.dataset.az;
@@ -1181,6 +1208,7 @@ function renderLista(ris){
         offerte=offerte.filter(x=>x.id!==o.id);OfferStore.salva(offerte);
         if(stato.editId===o.id){stato.editId=null;$("formOfferta").style.display="none";}
         aggiorna();}e.stopPropagation();return;}
+      if(az==="ver"){apriVerifica(o);e.stopPropagation();return;}
       apriForm(o);e.stopPropagation();
     };
     box.appendChild(div);
@@ -1516,6 +1544,7 @@ function mdMini(md){ // titoli, tabelle e link: quanto basta per FONTI.md
 /* ================= Form ================= */
 function apriForm(o){
   pulisciBadgeConfidenza();
+  $("pannelloVerifica").style.display="none";
   stato.editId=o?o.id:null;
   $("titoloForm").textContent=o?"Modifica: "+o.nome:"Nuova offerta";
   $("oNome").value=o?o.nome:"";$("oFornitore").value=o?o.fornitore||"":"";
@@ -1669,6 +1698,37 @@ function pulisciBadgeConfidenza(){
   $("estrAvvisi").style.display="none";
   $("boxGolden").style.display="none";
 }
+function apriVerifica(o){
+  const v=o.verificaCte;
+  if(!v||!Array.isArray(v.punti)||!v.punti.length)return;
+  stato.editId=null;$("formOfferta").style.display="none";
+  const cfg=v.cfgOverride?deepMerge(TariffManager.config,v.cfgOverride):TariffManager.config;
+  const pun=v.punRef||leggiPun();
+  let corpo=`<table class="tabVerifica"><thead><tr>
+    <th>kWh</th><th>kW</th><th>Tipo</th><th>Da CTE</th><th>Calcolato ora</th><th>Scarto</th></tr></thead><tbody>`;
+  let errMax=0;
+  for(const p of v.punti){
+    const input={periodo:"annuale",multiorario:false,kWh:{F0:p.kWh},potenzaKw:p.kW,residente:p.residente};
+    const b=CalcEngine.bolletta("ml",input,o,cfg,pun,new Set());
+    const scontiTot=v.scontiInclusiNelTotale?(b.sconti.preIVA+b.sconti.postIVA):0;
+    const calcolato=b.materia.totale+b.dispacciamento+b.rete.totale+b.oneri.totale-scontiTot;
+    const scartoEur=calcolato-p.attesoCte;
+    const scartoPct=p.attesoCte?scartoEur/p.attesoCte*100:0;
+    errMax=Math.max(errMax,Math.abs(scartoPct));
+    const cls=Math.abs(scartoPct)<=1?"ok":"bad";
+    corpo+=`<tr class="${cls}"><td>${p.kWh}</td><td>${p.kW}</td><td>${p.residente?"res":"non res"}</td>
+      <td class="mono">${eur(p.attesoCte)}</td><td class="mono">${eur(calcolato)}</td>
+      <td class="mono scarto">${scartoEur>=0?"+":""}${eur(scartoEur)} (${scartoPct>=0?"+":""}${scartoPct.toFixed(2)}%)</td></tr>`;
+  }
+  corpo+="</tbody></table>";
+  $("verificaCorpo").innerHTML=corpo;
+  $("verificaSottotitolo").textContent=
+    `${o.nome} · dati CTE del ${v.dataCte||"n.d."} · errore massimo ${errMax.toFixed(2)}%`
+    +(v.cfgOverride?" · tariffe storiche (scheda di un trimestre diverso da quello attuale)":"");
+  $("pannelloVerifica").style.display="";
+  $("pannelloVerifica").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
 function apriFormEstrazione(off,goldenPoints,warnings){
   apriForm(null);
   $("titoloForm").textContent="Revisione estrazione: "+(off.nome||"offerta");
@@ -1816,6 +1876,7 @@ function wiring(){
     aggiorna();};
   $("btNuova").onclick=()=>apriForm(null);
   $("btAnnulla").onclick=()=>{stato.editId=null;$("formOfferta").style.display="none";aggiorna();};
+  $("btChiudiVerifica").onclick=()=>{$("pannelloVerifica").style.display="none";};
   $("btSalva").onclick=salvaForm;
   $("oBio").onchange=aggiornaFormVisibilita;
   $("oTipo").onchange=aggiornaFormVisibilita;
@@ -1867,7 +1928,7 @@ async function avvio(){
   if(!offerte.length){offerte=SEED.slice();OfferStore.salva(offerte);}
   wiring();caricaFonti();aggiorna();
 }
-console.log("luce-check build 2026.07.14");
+console.log("luce-check build 2026.07.15");
 avvio();
 </script>
 </body>
